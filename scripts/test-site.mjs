@@ -43,6 +43,8 @@ try {
   // Landing page, then an example by its ?src= link.
   await page.goto(base);
   await page.getByRole("button", { name: "Open a story…" }).waitFor();
+  assert.equal(await page.title(), "Gramps Connect Story Viewer");
+  await page.getByRole("heading", { name: "Gramps Connect Story Viewer" }).waitFor();
   await page.getByRole("link", { name: "The Story of Josef Meyer" }).click();
   await page.getByText("3 moments from Josef Meyer").waitFor();
   assert.match(page.url(), /\?src=examples\/full\.story\.zip$/);
@@ -59,6 +61,7 @@ try {
   await page.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "Open a story…" }).waitFor();
   assert.equal(new URL(page.url()).search + new URL(page.url()).hash, "");
+  assert.equal(await page.title(), "Gramps Connect Story Viewer");
 
   // Opening a file from the computer.
   const zip = readFileSync(join(siteDist, "examples", "no-map.story.zip"));

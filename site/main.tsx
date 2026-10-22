@@ -119,7 +119,7 @@ function App() {
   const close = () => {
     release();
     setStory(null);
-    document.title = "Story Viewer";
+    document.title = "Gramps Connect Story Viewer";
     history.replaceState(null, "", location.pathname);
   };
 
@@ -157,7 +157,7 @@ function App() {
       onDrop={onDrop}
     >
       <div className="column">
-        <h1>Story Viewer</h1>
+        <h1>Gramps Connect Story Viewer</h1>
         <p className="lead">
           Opens a family-history story saved as a <code>.story.zip</code>: slides with text, dates, photos, and
           places on a map.

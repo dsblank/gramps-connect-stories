@@ -9,7 +9,7 @@ no database, server or account to open, so any program can write one and
 any viewer can present it. [Gramps Connect](https://github.com/dsblank/gramps-connect)
 writes them and presents them with this package's player.
 
-- **Open a story:** the viewer at
+- **Open a story:** the Gramps Connect Story Viewer at
   **https://dsblank.github.io/gramps-connect-stories/**. Pick or drop a
   `.story.zip`, or link to one with `?src=<url>`; `#s3` opens a slide.
   Everything happens in the browser: an opened story is never uploaded.
