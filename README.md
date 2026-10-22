@@ -132,6 +132,36 @@ needed only by the player. With TypeScript 6 or later, add `"geojson"` to
 `compilerOptions.types`: maplibre's own declarations use its global
 `GeoJSON` namespace.
 
+## Writing stories from Python: `python/gramps_connect_story.py`
+
+One file, standard library only, for programs that aren't JavaScript.
+Copy it into your project. It's **GPL-2.0-or-later** (unlike the rest of
+this repo), so GPL programs such as Gramps addons can include it.
+
+```python
+from gramps_connect_story import Story
+
+story = Story("The Story of Josef Meyer", language="en")
+story.add_slide(
+    title="Birth",
+    text="Josef was born *about* 1850.",
+    date={"text": "about 1850", "edtf": "1850~", "sortYear": 1850},
+    place={"name": "Zürich", "lat": 47.37, "lon": 8.54},
+    photo="portrait.jpg",
+)
+story.write("josef.story.zip")
+```
+
+With [Pillow](https://python-pillow.org/) installed, photos are sized for
+viewing (1600px, WebP) with their metadata removed; without it they're
+stored as they are. `write()` checks what a writer can get wrong (ids,
+references, coordinates) and the tests check the output against this
+package's own reader (`npm run test:python`).
+
+The Gramps desktop addon **Export Story** (Tools → Utilities, in
+`gramps-project/addons-source`) ships a copy of this file; keep the two
+identical.
+
 ## Development
 
 ```sh
@@ -140,6 +170,7 @@ npm test               # Node tests (examples, versioning, validation, zip handl
 npm run test:browser   # in headless Google Chrome: optimizeImage(), the player,
                        # the embed (cross-origin) and the viewer site
 npm run test:pack      # what npm would get, installed into an empty project
+npm run test:python    # the Python writer, and its output read by this package
 npm run typecheck
 npm run generate       # after editing spec/*/story.schema.json
 npm run build          # dist/ (what npm users get)

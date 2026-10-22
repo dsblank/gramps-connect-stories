@@ -25,6 +25,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # The Python writer, with Pillow, then its output read by this
+      # package (also once as if Pillow weren't installed).
+      - name: Python writer
+        run: |
+          python -m pip install pillow
+          PYTHON=python npm run test:python
+
       # In the runner's preinstalled Google Chrome: optimizeImage(), the
       # player, the embed (cross-origin, as from a CDN) and the viewer site.
       # Builds dist/ and site-dist/ on the way. The map tests fetch

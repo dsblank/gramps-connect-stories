@@ -54,7 +54,8 @@
     "test": "tsx --test src/__tests__/*.test.ts",
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs && npm run build:site && node scripts/test-embed.mjs && node scripts/test-site.mjs",
-    "test:pack": "node scripts/test-pack.mjs"
+    "test:pack": "node scripts/test-pack.mjs",
+    "test:python": "${PYTHON:-python3} -m unittest discover -s python && tsx scripts/test-python.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3",
