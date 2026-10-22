@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "types": ["node"],
+    "lib": ["ES2020", "DOM"]
+  },
+  "include": ["src/**/*.ts", "src/generated/*.d.ts"]
+}

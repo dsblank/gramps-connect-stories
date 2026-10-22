@@ -1,0 +1,34 @@
+{
+  "name": "@gramps-connect/story",
+  "version": "0.1.0",
+  "description": "Read, write, validate and present .story.zip files: portable, versioned family-history stories.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dsblank/gramps-connect-stories.git"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema/1.0": "./spec/1.0/story.schema.json"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-validator.mjs",
+    "test": "tsx --test src/__tests__/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "node scripts/test-browser.mjs"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "ajv": "^8.20.0",
+    "esbuild": "^0.25.12",
+    "playwright-core": "^1.64.1",
+    "tsx": "^4.23.5",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "format": "gramps-connect-story",
+  "version": "1.0",
+  "title": "A Very Short Story",
+  "slides": [
+    { "id": "s0", "title": "A Very Short Story", "text": "The smallest valid story: one slide, no media." }
+  ],
+  "media": {}
+}

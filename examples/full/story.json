@@ -1,0 +1,77 @@
+{
+  "$schema": "https://dsblank.github.io/gramps-connect-stories/spec/1.0/story.schema.json",
+  "format": "gramps-connect-story",
+  "version": "1.0",
+  "title": "The Story of Josef Meyer",
+  "language": "en",
+  "created": "2026-10-22T14:03:00Z",
+  "generator": { "name": "Gramps Connect", "version": "0.9.2", "url": "https://github.com/dsblank/gramps-connect" },
+  "authors": [{ "name": "Example Author", "url": "https://example.org/" }],
+  "license": "CC-BY-4.0",
+  "presentation": { "basemap": "auto" },
+  "slides": [
+    {
+      "id": "s0",
+      "title": "The Story of Josef Meyer",
+      "text": "3 moments from Josef Meyer's recorded life.",
+      "media": [{ "ref": "portrait" }],
+      "people": [{ "name": "Josef Meyer" }]
+    },
+    {
+      "id": "s1",
+      "title": "Birth of Josef Meyer",
+      "text": "Josef Meyer was born *about* 1850 in **Zürich**.",
+      "date": { "text": "about 1850", "edtf": "1850~", "sortYear": 1850 },
+      "place": {
+        "name": "Zürich, Switzerland",
+        "lat": 47.3769,
+        "lon": 8.5417,
+        "overlays": [
+          {
+            "media": "map-1850",
+            "corners": [[8.50, 47.39], [8.58, 47.39], [8.58, 47.36], [8.50, 47.36]],
+            "opacity": 0.7,
+            "order": 0,
+            "date": { "text": "1840–1860", "edtf": "1840/1860" }
+          }
+        ]
+      },
+      "media": [{ "ref": "portrait" }],
+      "people": [{ "name": "Josef Meyer", "role": "Primary" }]
+    },
+    {
+      "id": "s2",
+      "title": "Baptism of Josef Meyer",
+      "text": "He was baptized at the Grossmünster.",
+      "date": { "text": "12 March 1850", "edtf": "1850-03-12", "sortYear": 1850 },
+      "place": {
+        "name": "Grossmünster, Zürich",
+        "geometry": {
+          "type": "Feature",
+          "properties": { "name": "Grossmünster" },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[8.5435, 47.3700], [8.5445, 47.3700], [8.5445, 47.3706], [8.5435, 47.3706], [8.5435, 47.3700]]]
+          }
+        }
+      },
+      "media": [{ "ref": "church", "caption": "The Grossmünster", "credit": "Example Archive" }],
+      "people": [{ "name": "Josef Meyer", "role": "Primary" }]
+    },
+    {
+      "id": "s3",
+      "title": "Emigration",
+      "text": "Josef left for America.",
+      "date": { "text": "1872", "edtf": "1872", "sortYear": 1872 },
+      "place": { "name": "Le Havre, France", "lat": 49.4944, "lon": 0.1079 }
+    }
+  ],
+  "media": {
+    "portrait": { "src": "media/portrait.webp", "mime": "image/webp", "width": 72, "height": 96, "alt": "Portrait of Josef Meyer" },
+    "church": { "src": "media/church.webp", "mime": "image/webp", "width": 96, "height": 72 },
+    "map-1850": { "src": "media/map-1850.png", "mime": "image/png", "width": 128, "height": 96, "alt": "Map of Zürich around 1850" }
+  },
+  "extensions": {
+    "gramps-connect": { "slides": { "s1": { "event": "E0012" }, "s2": { "event": "E0013" } } }
+  }
+}

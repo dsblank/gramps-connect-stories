@@ -1,0 +1,24 @@
+{
+  "format": "gramps-connect-story",
+  "version": "1.0",
+  "title": "סיפורה של רבקה כהן",
+  "language": "he",
+  "slides": [
+    {
+      "id": "s0",
+      "title": "סיפורה של רבקה כהן",
+      "text": "שני רגעים מחייה של רבקה כהן.",
+      "media": [{ "ref": "m1" }]
+    },
+    {
+      "id": "s1",
+      "title": "לידתה של רבקה כהן",
+      "text": "רבקה כהן נולדה ב**וילנה**.",
+      "date": { "text": "1901", "edtf": "1901", "sortYear": 1901 },
+      "place": { "name": "וילנה", "lat": 54.6872, "lon": 25.2797 }
+    }
+  ],
+  "media": {
+    "m1": { "src": "media/m1.webp", "mime": "image/webp", "width": 96, "height": 72 }
+  }
+}

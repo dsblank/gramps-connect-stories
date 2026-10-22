@@ -1,0 +1,37 @@
+{
+  "format": "gramps-connect-story",
+  "version": "1.0",
+  "title": "The Story of Anna Keller",
+  "language": "en",
+  "slides": [
+    {
+      "id": "s0",
+      "title": "The Story of Anna Keller",
+      "text": "3 moments from Anna Keller's recorded life.",
+      "media": [{ "ref": "m1" }]
+    },
+    {
+      "id": "s1",
+      "title": "Birth of Anna Keller",
+      "text": "Anna Keller was born *about* 1872.",
+      "date": { "text": "about 1872", "edtf": "1872~", "sortYear": 1872 },
+      "media": [{ "ref": "m1" }]
+    },
+    {
+      "id": "s2",
+      "title": "Marriage",
+      "text": "Anna married **Paul Brunner**.\nThe wedding was small.\n\nThey had four children.",
+      "date": { "text": "between 1895 and 1897", "edtf": "1895/1897", "sortYear": 1896 },
+      "media": [{ "ref": "m2", "caption": "Wedding portrait" }]
+    },
+    {
+      "id": "s3",
+      "title": "Death of Anna Keller",
+      "text": "Anna Keller died. No date is recorded."
+    }
+  ],
+  "media": {
+    "m1": { "src": "media/m1.webp", "mime": "image/webp", "width": 96, "height": 72, "alt": "Portrait of Anna Keller" },
+    "m2": { "src": "media/m2.webp", "mime": "image/webp", "width": 72, "height": 96 }
+  }
+}
