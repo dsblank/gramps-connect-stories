@@ -5,6 +5,9 @@
 // its own for this.
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
+// Positions the marker and styles the attribution control; without it the
+// pin sits in normal flow at the top left instead of on its coordinate.
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import type { FeatureCollection, GeoJSON } from "geojson";
 import type { Overlay, Place } from "../types";

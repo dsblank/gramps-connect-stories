@@ -50,9 +50,13 @@ const bundle = await build({
   bundle: true,
   format: "esm",
   jsx: "automatic",
+  // The player imports maplibre's stylesheet, so there's a .css output too.
+  outdir: "out",
+  entryNames: "bundle",
   write: false,
   logLevel: "warning",
 });
+const output = (ext) => bundle.outputFiles.find((f) => f.path.endsWith(ext)).text;
 
 const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json", ".webp": "image/webp", ".png": "image/png" };
 const server = createServer((req, res) => {
@@ -60,10 +64,13 @@ const server = createServer((req, res) => {
   let body;
   let type = "text/html";
   if (url.pathname === "/") {
-    body = `<!doctype html><html><body style="margin:0"><div id="root" style="width:1280px;height:800px;position:relative"></div><script type="module" src="/bundle.js"></script></body></html>`;
+    body = `<!doctype html><html><body style="margin:0"><link rel="stylesheet" href="/bundle.css"><div id="root" style="width:1280px;height:800px;position:relative"></div><script type="module" src="/bundle.js"></script></body></html>`;
   } else if (url.pathname === "/bundle.js") {
-    body = bundle.outputFiles[0].text;
+    body = output(".js");
     type = TYPES[".js"];
+  } else if (url.pathname === "/bundle.css") {
+    body = output(".css");
+    type = "text/css";
   } else if (/^\/maplibre-gl-(worker|shared)\.mjs$/.test(url.pathname)) {
     body = readFileSync(join(maplibreDist, url.pathname.slice(1)));
     type = TYPES[".mjs"];
@@ -118,6 +125,9 @@ try {
   await page.waitForFunction(() => window.mediaCalls.includes("map-1850"));
   // The marker appears once the map has loaded, which waits on basemap tiles.
   await page.waitForSelector(".maplibregl-marker", { timeout: 30_000 });
+  // maplibre's stylesheet came with the player: the marker is positioned on
+  // the map, not left in normal flow.
+  assert.equal(await page.$eval(".maplibregl-marker", (el) => getComputedStyle(el).position), "absolute");
 
   // Auto map mode follows the slide's year.
   await page.getByRole("radio", { name: "Auto" }).click();
