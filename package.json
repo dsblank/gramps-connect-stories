@@ -8,18 +8,53 @@
     "type": "git",
     "url": "git+https://github.com/dsblank/gramps-connect-stories.git"
   },
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "homepage": "https://dsblank.github.io/gramps-connect-stories/",
+  "bugs": "https://github.com/dsblank/gramps-connect-stories/issues",
+  "keywords": [
+    "genealogy",
+    "gramps",
+    "family-history",
+    "story",
+    "storymap",
+    "maplibre"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./player": "./src/player/index.ts",
-    "./schema/1.0": "./spec/1.0/story.schema.json"
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./player": {
+      "source": "./src/player/index.ts",
+      "types": "./dist/types/player/index.d.ts",
+      "default": "./dist/player.js"
+    },
+    "./embed": "./dist/embed.js",
+    "./schema/1.0": "./spec/1.0/story.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "spec",
+    "src",
+    "!src/__tests__",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:site": "node scripts/build.mjs && node scripts/build-site.mjs",
+    "prepack": "node scripts/build.mjs",
     "generate": "node scripts/generate-validator.mjs",
     "test": "tsx --test src/__tests__/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs"
+    "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs && npm run build:site && node scripts/test-embed.mjs && node scripts/test-site.mjs",
+    "test:pack": "node scripts/test-pack.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

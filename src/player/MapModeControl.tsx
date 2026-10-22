@@ -1,7 +1,8 @@
 // The Auto / Standard / Historical map picker, in plain HTML. A host app
 // with its own UI kit can supply its own control instead (StoryPlayer's
 // renderMapModeControl), taking the same props.
-import type { PlayerColors, PlayerStrings } from "./theme";
+import type { PlayerStrings } from "./strings";
+import type { PlayerColors } from "./theme";
 
 /** "standard" is today's map; "historical" a map of the year the viewer
  * picks; "auto" a map of each slide's own year as the story moves. */

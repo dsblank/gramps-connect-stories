@@ -3,14 +3,15 @@
 // slide), or a plain centered card when none does, plus a timeline strip
 // when two or more slides are dated. Fills its container; the host decides
 // whether that's a fullscreen modal, a page, or a box on a blog.
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from "react";
 import type { MediaItem, Slide, StoryDoc } from "../types";
 import { timelineYear } from "./dates";
 import { placeCenter } from "./geo";
 import { MapBackground, type MapSlide } from "./MapBackground";
 import { MapModeControl, type MapMode, type MapModeControlProps } from "./MapModeControl";
 import { parseStoryText } from "./text";
-import { defaultColors, ENGLISH, type PlayerColors, type PlayerStrings } from "./theme";
+import { stringsFor, type PlayerStrings } from "./strings";
+import { defaultColors, type PlayerColors } from "./theme";
 import { TIMELINE_HEIGHT, TimelineStrip, type TimelinePoint } from "./TimelineStrip";
 
 /** How much of the width the slide panel takes over a map; the map
@@ -27,11 +28,17 @@ export interface StoryPlayerProps {
   resolveMedia: (key: string, item: MediaItem) => Promise<string | null>;
   dark?: boolean;
   colors?: Partial<PlayerColors>;
+  /** The player's own words. By default, the built-in table for the
+   * story's language, else the browser's, else English (strings.ts). */
   strings?: Partial<PlayerStrings>;
   /** Shows a close button that calls this. */
   onClose?: () => void;
-  /** Arrow keys move between slides (listening on the window). Default true. */
-  keyboard?: boolean;
+  /** Arrow keys move between slides: true listens on the whole window (a
+   * fullscreen presentation), "focus" only while the player has focus (one
+   * of several on a page), false not at all. Default true. */
+  keyboard?: boolean | "focus";
+  /** Called with the new index whenever the slide changes. */
+  onSlideChange?: (index: number) => void;
   /** Replaces the built-in map-mode control, e.g. with one from the host's
    * own UI kit. */
   renderMapModeControl?: (props: MapModeControlProps) => ReactNode;
@@ -192,10 +199,17 @@ function NavArrows({ index, total, onPrev, onNext, variant, strings, colors }: {
 
 export function StoryPlayer({
   story, resolveMedia, dark = false, colors: colorOverrides, strings: stringOverrides, onClose,
-  keyboard = true, renderMapModeControl, initialSlide = 0,
+  keyboard = true, onSlideChange, renderMapModeControl, initialSlide = 0,
 }: StoryPlayerProps) {
   const colors = useMemo(() => ({ ...defaultColors(dark), ...colorOverrides }), [dark, colorOverrides]);
-  const strings = useMemo(() => ({ ...ENGLISH, ...stringOverrides }), [stringOverrides]);
+  const strings = useMemo(
+    () => ({
+      ...stringsFor(story.language, typeof navigator === "undefined" ? undefined : navigator.language),
+      ...stringOverrides,
+    }),
+    [story.language, stringOverrides],
+  );
+  const rootRef = useRef<HTMLDivElement>(null);
   const slides = story.slides;
   const [index, setIndex] = useState(initialSlide);
   const slide = slides[index];
@@ -238,18 +252,48 @@ export function StoryPlayer({
   const goPrev = () => setIndex((i) => Math.max(i - 1, 0));
   const goNext = () => setIndex((i) => Math.min(i + 1, slides.length - 1));
 
+  const onSlideChangeRef = useRef(onSlideChange);
+  onSlideChangeRef.current = onSlideChange;
+  useEffect(() => {
+    onSlideChangeRef.current?.(index);
+  }, [index]);
+
   useEffect(() => {
     if (!keyboard) return;
-    function onKey(e: KeyboardEvent) {
-      const target = e.target as HTMLElement | null;
+    const target: HTMLElement | Window | null = keyboard === "focus" ? rootRef.current : window;
+    if (!target) return;
+    function onKey(e: Event) {
+      const key = (e as KeyboardEvent).key;
+      const from = e.target as HTMLElement | null;
       // Not while typing a year into the map control.
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
-      if (e.key === "ArrowRight") setIndex((i) => Math.min(i + 1, slides.length - 1));
-      if (e.key === "ArrowLeft") setIndex((i) => Math.max(i - 1, 0));
+      if (from && (from.tagName === "INPUT" || from.tagName === "TEXTAREA" || from.isContentEditable)) return;
+      if (key === "ArrowRight") setIndex((i) => Math.min(i + 1, slides.length - 1));
+      if (key === "ArrowLeft") setIndex((i) => Math.max(i - 1, 0));
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    target.addEventListener("keydown", onKey);
+    return () => target.removeEventListener("keydown", onKey);
   }, [keyboard, slides.length]);
+
+  // A horizontal swipe on the slide (not the map, which a drag pans)
+  // moves between slides.
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandlers = {
+    onTouchStart: (e: TouchEvent) => {
+      const t = e.touches[0];
+      swipeStart.current = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+    },
+    onTouchEnd: (e: TouchEvent) => {
+      const start = swipeStart.current;
+      swipeStart.current = null;
+      const t = e.changedTouches[0];
+      if (!start || !t) return;
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (dx < 0) goNext();
+      else goPrev();
+    },
+  };
 
   // Stable per slide, so a re-render for an unrelated reason (a map-mode
   // click) never looks like a new slide to the map's camera.
@@ -278,7 +322,9 @@ export function StoryPlayer({
 
   return (
     <div
+      ref={rootRef}
       lang={story.language}
+      tabIndex={keyboard === "focus" ? 0 : undefined}
       style={{
         position: "relative", width: "100%", height: "100%", overflow: "hidden",
         background: colors.surface, color: colors.text,
@@ -346,6 +392,7 @@ export function StoryPlayer({
               // well before the centered content, so text never sits on map.
               background: `linear-gradient(to right, transparent 0%, ${colors.panel} 22%)`,
             }}
+            {...swipeHandlers}
           >
             {content}
           </div>
@@ -359,6 +406,7 @@ export function StoryPlayer({
             padding: `${BAR_HEIGHT + 16}px 24px ${showTimeline ? TIMELINE_HEIGHT + 16 : 24}px`,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
           }}
+          {...swipeHandlers}
         >
           {content}
           <NavArrows index={index} total={slides.length} onPrev={goPrev} onNext={goNext} variant="inline" strings={strings} colors={colors} />

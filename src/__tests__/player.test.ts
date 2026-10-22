@@ -83,3 +83,13 @@ test("timeline layout", () => {
   assert.equal(tickLabel(-44), "44 BC");
   assert.equal(tickLabel(1850.4), "1850");
 });
+
+test("strings: the story's language, then the browser's, then English", async () => {
+  const { stringsFor, ENGLISH } = await import("../player/strings");
+  assert.equal(stringsFor("de-CH").next, "Weiter");
+  assert.equal(stringsFor(undefined, "fr-FR").next, "Suivant");
+  assert.equal(stringsFor("he", "nl").next, "Volgende");
+  assert.equal(stringsFor("he"), ENGLISH);
+  assert.equal(stringsFor(), ENGLISH);
+  assert.equal(stringsFor("es").historicalMapYear(1850), "Mapa histórico, 1850");
+});

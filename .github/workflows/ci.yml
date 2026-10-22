@@ -25,7 +25,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # optimizeImage() and the player in the runner's preinstalled Google
-      # Chrome (the player test fetches basemap tiles from the network).
+      # In the runner's preinstalled Google Chrome: optimizeImage(), the
+      # player, the embed (cross-origin, as from a CDN) and the viewer site.
+      # Builds dist/ and site-dist/ on the way. The map tests fetch
+      # basemap tiles from the network.
       - name: Browser tests
         run: npm run test:browser
+
+      # What npm would get: the file list, an install into an empty
+      # project, and every entry point bundling and typechecking there.
+      - name: Package test
+        run: npm run test:pack

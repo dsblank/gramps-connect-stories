@@ -1,0 +1,53 @@
+name: Release to npm
+
+# Publishes @gramps-connect/story when a version tag is pushed:
+#   1. bump "version" in package.json, commit, push
+#   2. git tag v0.2.0 && git push origin v0.2.0
+# The tag has to match package.json's version.
+#
+# Authenticates with npm trusted publishing (OIDC: no token stored here)
+# once it's set up for this repo and workflow on npmjs.com; until then,
+# with an NPM_TOKEN repository secret. --provenance links the published
+# package to this commit and workflow on its npm page.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs a newer npm than Node 22 ships with.
+      - run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - name: Tag matches package.json
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME doesn't match package.json version $version" >&2
+            exit 1
+          fi
+
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run test:browser
+      - run: npm run test:pack
+
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

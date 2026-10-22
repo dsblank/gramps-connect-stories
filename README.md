@@ -7,14 +7,48 @@ package that reads, writes and validates them.
 A story is one `.story.zip`: a `story.json` and the media it uses. It needs
 no database, server or account to open, so any program can write one and
 any viewer can present it. [Gramps Connect](https://github.com/dsblank/gramps-connect)
-writes them and presents them with this package's player; a standalone
-viewer is planned.
+writes them and presents them with this package's player.
 
+- **Open a story:** the viewer at
+  **https://dsblank.github.io/gramps-connect-stories/**. Pick or drop a
+  `.story.zip`, or link to one with `?src=<url>`; `#s3` opens a slide.
+  Everything happens in the browser: an opened story is never uploaded.
+- **Put a story on a web page:** the [`<gramps-connect-story>`](#on-any-web-page-gramps-connect-story)
+  element.
 - **Format specification:** [`spec/1.0/README.md`](spec/1.0/README.md)
 - **JSON Schema:** [`spec/1.0/story.schema.json`](spec/1.0/story.schema.json)
 - **Examples:** [`examples/`](examples/)
 
+## On any web page: `<gramps-connect-story>`
+
+One script tag, no build step:
+
+```html
+<script type="module"
+  src="https://cdn.jsdelivr.net/npm/@gramps-connect/story@0.1.0/dist/embed.js"></script>
+
+<gramps-connect-story src="josef-meyer.story.zip"></gramps-connect-story>
+```
+
+| Attribute | |
+|---|---|
+| `src` | URL of a `.story.zip`. On another site, that site has to allow it (CORS). |
+| `slide` | Slide to open on: an index, or a slide id like `s3`. |
+| `theme` | `light`, `dark`, or `auto` (the default: the viewer's setting). |
+
+It's 480px tall unless the page's CSS says otherwise
+(`gramps-connect-story { height: 70vh }`), and draws into a shadow root,
+so the page's styles and the story's don't mix. Arrow keys move between
+slides once a story has focus, so several can share a page. `embed.js`
+includes React and maplibre; the map's worker loads from beside it (from
+a CDN through a `blob:` URL, so a page whose Content-Security-Policy sets
+`worker-src` has to allow `blob:`).
+
 ## The package: `@gramps-connect/story`
+
+```sh
+npm install @gramps-connect/story
+```
 
 ```ts
 import { readStoryZip, writeStoryZip, validate, optimizeImage, mediaBlob } from "@gramps-connect/story";
@@ -86,23 +120,53 @@ It fills its container. Props:
 | `story` | The story document (`StoryDoc`). |
 | `resolveMedia(key, item)` | A URL for a media key, or null. The host owns these URLs, and revoking them. |
 | `dark`, `colors` | Light/dark defaults, and any colors to override (`surface`, `text`, `muted`, `border`, `mark`, `panel`). |
-| `strings` | The player's own words (`previous`, `next`, `close`, map-mode labels), to translate them. |
+| `strings` | The player's own words (`previous`, `next`, `close`, map-mode labels). By default, built-in English, German, Spanish, French or Dutch, by the story's language and then the browser's. |
 | `onClose` | Shows a close button. |
-| `keyboard` | Arrow keys change slides (default true). |
+| `keyboard` | Arrow keys change slides: `true` (default) anywhere on the page, `"focus"` only while the player has focus, `false` never. Swiping on a slide always works. |
+| `onSlideChange(index)` | Called whenever the slide changes. |
+| `initialSlide` | The slide to open on. |
 | `renderMapModeControl` | Replaces the built-in map-mode control with your own, given the same props. |
 
 Peer dependencies: `react`, `react-dom` and `maplibre-gl` (5 or later),
-needed only by the player.
+needed only by the player. With TypeScript 6 or later, add `"geojson"` to
+`compilerOptions.types`: maplibre's own declarations use its global
+`GeoJSON` namespace.
 
 ## Development
 
 ```sh
 npm install
 npm test               # Node tests (examples, versioning, validation, zip handling)
-npm run test:browser   # optimizeImage() and the player in headless Google Chrome
+npm run test:browser   # in headless Google Chrome: optimizeImage(), the player,
+                       # the embed (cross-origin) and the viewer site
+npm run test:pack      # what npm would get, installed into an empty project
 npm run typecheck
 npm run generate       # after editing spec/*/story.schema.json
+npm run build          # dist/ (what npm users get)
+npm run build:site     # site-dist/ (the viewer)
 ```
+
+Gramps Connect includes this repo as a git submodule and compiles `src/`
+directly (the `source` export condition), so it never needs `dist/`.
+
+## Releasing
+
+The viewer site redeploys from `main` on every push
+(`.github/workflows/pages.yml`). An npm release is a version tag:
+
+```sh
+# bump "version" in package.json, commit and push, then:
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+`.github/workflows/release.yml` then runs every test and publishes with
+provenance. The package's version (semver, for its API) is separate from
+the format's (`FORMAT_VERSION`); the table below says which package
+versions read and write which format versions.
+
+| Package | Reads format | Writes format |
+|---|---|---|
+| 0.1.x | 1.x | 1.0 |
 
 ## Versioning
 
