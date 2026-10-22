@@ -12,23 +12,47 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./player": "./src/player/index.ts",
     "./schema/1.0": "./spec/1.0/story.schema.json"
   },
   "scripts": {
     "generate": "node scripts/generate-validator.mjs",
     "test": "tsx --test src/__tests__/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "test:browser": "node scripts/test-browser.mjs"
+    "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs"
   },
   "dependencies": {
-    "fflate": "^0.8.3"
+    "fflate": "^0.8.3",
+    "@openhistoricalmap/maplibre-gl-dates": "^1.4.0"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^26.1.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "ajv": "^8.20.0",
     "esbuild": "^0.28.1",
+    "maplibre-gl": "^6.3.0",
     "playwright-core": "^1.64.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "tsx": "^4.23.5",
     "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "maplibre-gl": ">=5",
+    "react": "^18.2 || ^19",
+    "react-dom": "^18.2 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "maplibre-gl": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   }
 }

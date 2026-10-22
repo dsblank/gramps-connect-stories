@@ -7,7 +7,8 @@ package that reads, writes and validates them.
 A story is one `.story.zip`: a `story.json` and the media it uses. It needs
 no database, server or account to open, so any program can write one and
 any viewer can present it. [Gramps Connect](https://github.com/dsblank/gramps-connect)
-writes them; a standalone viewer is planned.
+writes them and presents them with this package's player; a standalone
+viewer is planned.
 
 - **Format specification:** [`spec/1.0/README.md`](spec/1.0/README.md)
 - **JSON Schema:** [`spec/1.0/story.schema.json`](spec/1.0/story.schema.json)
@@ -48,12 +49,57 @@ const zip = await writeStoryZip(
 `validate()` runs a validator compiled ahead of time from the schema
 (`src/generated/`), so it works under a strict Content-Security-Policy.
 
+## The player: `@gramps-connect/story/player`
+
+A React component that presents a story: one slide at a time over a
+full-bleed map when any slide has a place (with the place's shapes,
+historical map overlays shown in their own era, and Auto / Standard /
+Historical basemaps from OpenFreeMap and OpenHistoricalMap), or as plain
+cards when none does, with a timeline strip when two or more slides are
+dated.
+
+```tsx
+import * as maplibregl from "maplibre-gl";
+import { StoryPlayer } from "@gramps-connect/story/player";
+
+// Tell maplibre where your bundler serves its worker (maplibre-gl 5+
+// ships it as dist/maplibre-gl-worker.mjs + dist/maplibre-gl-shared.mjs,
+// which must sit side by side). Without this the map draws nothing.
+maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
+
+const story = await readStoryZip(file);
+const urls = new Map<string, string>();
+const resolveMedia = async (key: string) => {
+  if (!urls.has(key)) urls.set(key, URL.createObjectURL(mediaBlob(story, key)!));
+  return urls.get(key)!;
+};
+
+<div style={{ width: "100vw", height: "100vh" }}>
+  <StoryPlayer story={story.doc} resolveMedia={resolveMedia} onClose={() => {}} />
+</div>
+```
+
+It fills its container. Props:
+
+| Prop | |
+|---|---|
+| `story` | The story document (`StoryDoc`). |
+| `resolveMedia(key, item)` | A URL for a media key, or null. The host owns these URLs, and revoking them. |
+| `dark`, `colors` | Light/dark defaults, and any colors to override (`surface`, `text`, `muted`, `border`, `mark`, `panel`). |
+| `strings` | The player's own words (`previous`, `next`, `close`, map-mode labels), to translate them. |
+| `onClose` | Shows a close button. |
+| `keyboard` | Arrow keys change slides (default true). |
+| `renderMapModeControl` | Replaces the built-in map-mode control with your own, given the same props. |
+
+Peer dependencies: `react`, `react-dom` and `maplibre-gl` (5 or later),
+needed only by the player.
+
 ## Development
 
 ```sh
 npm install
 npm test               # Node tests (examples, versioning, validation, zip handling)
-npm run test:browser   # optimizeImage() in headless Google Chrome
+npm run test:browser   # optimizeImage() and the player in headless Google Chrome
 npm run typecheck
 npm run generate       # after editing spec/*/story.schema.json
 ```

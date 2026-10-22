@@ -25,6 +25,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # optimizeImage() in the runner's preinstalled Google Chrome.
-      - name: Browser image tests
+      # optimizeImage() and the player in the runner's preinstalled Google
+      # Chrome (the player test fetches basemap tiles from the network).
+      - name: Browser tests
         run: npm run test:browser

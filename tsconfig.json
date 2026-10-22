@@ -8,8 +8,17 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "allowJs": false,
-    "types": ["node"],
-    "lib": ["ES2020", "DOM"]
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "src/generated/*.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
 }
