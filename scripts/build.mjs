@@ -4,7 +4,9 @@
 //   player.js       the React player, ES module; its dependencies (react,
 //                   maplibre, ...) stay imports for the user's bundler,
 //                   including maplibre's stylesheet
-//   types/          TypeScript declarations for both
+//   editor.js       the React editor (Mantine), ES module, imports kept the
+//                   same way
+//   types/          TypeScript declarations for all three
 //   embed.js        <gramps-connect-story>: everything bundled into one
 //                   file for a plain <script type="module"> tag
 //   maplibre-gl-worker.mjs, maplibre-gl-shared.mjs
@@ -34,7 +36,7 @@ const external = [
 ];
 await build({
   absWorkingDir: root,
-  entryPoints: { index: "src/index.ts", player: "src/player/index.ts" },
+  entryPoints: { index: "src/index.ts", player: "src/player/index.ts", editor: "src/editor/index.ts" },
   outdir: dist,
   bundle: true,
   format: "esm",

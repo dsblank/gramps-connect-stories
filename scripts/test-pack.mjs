@@ -26,11 +26,11 @@ try {
   const files = packed.files.map((f) => f.path).sort();
   for (const required of [
     "LICENSE", "README.md", "package.json",
-    "dist/index.js", "dist/player.js", "dist/embed.js",
+    "dist/index.js", "dist/player.js", "dist/editor.js", "dist/embed.js",
     "dist/maplibre-gl-worker.mjs", "dist/maplibre-gl-shared.mjs",
-    "dist/types/index.d.ts", "dist/types/player/index.d.ts",
+    "dist/types/index.d.ts", "dist/types/player/index.d.ts", "dist/types/editor/index.d.ts",
     "spec/1.0/story.schema.json", "spec/1.0/README.md",
-    "src/index.ts", "src/player/index.ts",
+    "src/index.ts", "src/player/index.ts", "src/editor/index.ts",
   ]) {
     assert.ok(files.includes(required), `${required} is missing from the package`);
   }
@@ -39,11 +39,13 @@ try {
   }
   console.log(`package: ${files.length} files, ${(packed.size / 1024).toFixed(0)} KiB packed`);
 
-  // An empty project that installs the tarball and the player's peers.
+  // An empty project that installs the tarball and its peers.
   const project = join(work, "consumer");
   run("mkdir", ["-p", project], work);
   writeFileSync(join(project, "package.json"), JSON.stringify({ name: "consumer", private: true, type: "module" }));
-  const peers = Object.keys(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).peerDependencies);
+  // Each at the range we declare (the newest Mantine may be past ours).
+  const peers = Object.entries(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).peerDependencies)
+    .map(([name, range]) => `${name}@${range}`);
   run(npm, ["install", "--no-audit", "--no-fund", join(work, packed.filename), ...peers, "@types/react", "@types/geojson"], project);
 
   // The core under plain Node: write a story, read it back.
@@ -62,6 +64,7 @@ try {
     import * as maplibregl from "maplibre-gl";
     import { readStoryZip, mediaBlob, type StoryDoc } from "@gramps-connect/story";
     import { StoryPlayer, stringsFor } from "@gramps-connect/story/player";
+    import { StoryEditor, suggestEdtf } from "@gramps-connect/story/editor";
     import "@gramps-connect/story/embed";
     import schema from "@gramps-connect/story/schema/1.0" with { type: "json" };
     maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -71,6 +74,9 @@ try {
       return <StoryPlayer story={doc} resolveMedia={async (key) => URL.createObjectURL(mediaBlob(story, key)!)} strings={stringsFor("de")} />;
     }
     export const schemaId: string = schema.$id;
+    export function edit(doc: StoryDoc) {
+      return <StoryEditor initialStory={doc} resolveMedia={async () => null} parseDateText={suggestEdtf} />;
+    }
   `);
   writeFileSync(join(project, "tsconfig.json"), JSON.stringify({
     compilerOptions: {

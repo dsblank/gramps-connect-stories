@@ -1,6 +1,8 @@
 // Builds the standalone viewer into site-dist/, for GitHub Pages:
 //
 //   index.html, app.js, app.css   the viewer (site/)
+//   edit.html, editor.js, editor.css, chunks/
+//                                 the editor (site/editor.tsx)
 //   maplibre-gl-worker.mjs, maplibre-gl-shared.mjs
 //   examples/*.story.zip          the example stories, zipped
 //   spec/1.0/story.schema.json    at the URL the schema's own $id names
@@ -36,7 +38,29 @@ await build({
   legalComments: "linked",
   logLevel: "warning",
 });
+// The editor: its own page and bundle, so the viewer doesn't carry Mantine.
+// Split, so each date language (gramps-date) loads only when a story in it
+// is edited. The "source" condition: gramps-date is compiled from its
+// TypeScript, as in Gramps Connect, whether it's the workspace copy or npm's.
+await build({
+  absWorkingDir: root,
+  entryPoints: { editor: "site/editor.tsx" },
+  outdir: out,
+  bundle: true,
+  splitting: true,
+  chunkNames: "chunks/[name]-[hash]",
+  conditions: ["source"],
+  format: "esm",
+  target: "es2020",
+  jsx: "automatic",
+  minify: true,
+  sourcemap: true,
+  define: { "process.env.NODE_ENV": '"production"', __PACKAGE_VERSION__: JSON.stringify(pkg.version) },
+  legalComments: "linked",
+  logLevel: "warning",
+});
 copyFileSync(join(root, "site/index.html"), join(out, "index.html"));
+copyFileSync(join(root, "site/editor.html"), join(out, "edit.html"));
 for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
   copyFileSync(join(maplibreDist, file), join(out, file));
 }

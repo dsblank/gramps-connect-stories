@@ -15,7 +15,10 @@
       "ES2020",
       "DOM"
     ],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "customConditions": [
+      "source"
+    ]
   },
   "include": [
     "src/**/*.ts",

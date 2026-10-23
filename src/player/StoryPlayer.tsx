@@ -44,6 +44,9 @@ export interface StoryPlayerProps {
   renderMapModeControl?: (props: MapModeControlProps) => ReactNode;
   /** Shown before the title, e.g. ViewerBrand on a standalone page. */
   brand?: ReactNode;
+  /** The host's own buttons, at the right of the title bar (before the
+   * close button), e.g. the viewer site's Edit. */
+  actions?: ReactNode;
   initialSlide?: number;
 }
 
@@ -201,7 +204,7 @@ function NavArrows({ index, total, onPrev, onNext, variant, strings, colors }: {
 
 export function StoryPlayer({
   story, resolveMedia, dark = false, colors: colorOverrides, strings: stringOverrides, onClose,
-  keyboard = true, onSlideChange, renderMapModeControl, brand, initialSlide = 0,
+  keyboard = true, onSlideChange, renderMapModeControl, brand, actions, initialSlide = 0,
 }: StoryPlayerProps) {
   const colors = useMemo(() => ({ ...defaultColors(dark), ...colorOverrides }), [dark, colorOverrides]);
   const strings = useMemo(
@@ -369,6 +372,16 @@ export function StoryPlayer({
               ? renderMapModeControl(modeControlProps)
               : <MapModeControl {...modeControlProps} strings={strings} colors={colors} />}
           </div>
+        </div>
+      )}
+      {actions && (
+        <div
+          style={{
+            position: "absolute", top: 0, right: onClose ? 60 : 12, height: BAR_HEIGHT, zIndex: 3,
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+        >
+          {actions}
         </div>
       )}
       {onClose && (

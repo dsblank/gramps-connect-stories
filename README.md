@@ -13,6 +13,11 @@ writes them and presents them with this package's player.
   **https://dsblank.github.io/gramps-connect-stories/**. Pick or drop a
   `.story.zip`, or link to one with `?src=<url>`; `#s3` opens a slide.
   Everything happens in the browser: an opened story is never uploaded.
+- **Change a story, or make one:** the Story Editor, at
+  **https://dsblank.github.io/gramps-connect-stories/edit.html** (or
+  **Edit** on an open story in the viewer). Titles, dates, text and the
+  order of slides; it saves a new `.story.zip`, back into the opened file
+  in Chrome and Edge. Also entirely in the browser.
 - **Put a story on a web page:** the [`<gramps-connect-story>`](#on-any-web-page-gramps-connect-story)
   element.
 - **Format specification:** [`spec/1.0/README.md`](spec/1.0/README.md)
@@ -125,12 +130,54 @@ It fills its container. Props:
 | `keyboard` | Arrow keys change slides: `true` (default) anywhere on the page, `"focus"` only while the player has focus, `false` never. Swiping on a slide always works. |
 | `onSlideChange(index)` | Called whenever the slide changes. |
 | `initialSlide` | The slide to open on. |
+| `brand` | Shown before the title, e.g. `ViewerBrand`. |
+| `actions` | Your own buttons, at the right of the title bar. |
 | `renderMapModeControl` | Replaces the built-in map-mode control with your own, given the same props. |
 
 Peer dependencies: `react`, `react-dom` and `maplibre-gl` (5 or later),
 needed only by the player. With TypeScript 6 or later, add `"geojson"` to
 `compilerOptions.types`: maplibre's own declarations use its global
 `GeoJSON` namespace.
+
+## The editor: `@gramps-connect/story/editor`
+
+A React component that edits a story document: the slides on the left
+(drag to reorder), the selected slide's title, date and text in the
+middle, and the player on the right showing it as it changes, with undo
+and redo and the format's validation as you go. It edits the document;
+opening and saving files is up to you (the Story Editor page uses the File
+System Access API where there is one, a download where not).
+
+```tsx
+import "@mantine/core/styles.css";
+import { MantineProvider } from "@mantine/core";
+import { StoryEditor, pruneMedia } from "@gramps-connect/story/editor";
+import { writeStoryZip } from "@gramps-connect/story";
+
+let latest = story.doc;
+<MantineProvider>
+  <StoryEditor initialStory={story.doc} files={story.files} resolveMedia={resolveMedia} onChange={(doc) => (latest = doc)} />
+</MantineProvider>
+
+// Saving: leave out media nothing uses any more, then zip.
+const saved = pruneMedia(latest, story.files);
+const zip = await writeStoryZip(saved.doc, saved.files);
+```
+
+A date is typed as readers should see it ("about 1850", "um 1850"), and its
+precise form (EDTF, for the timeline and historical maps) is worked out
+from it, in the story's language, by
+[`@gramps-connect/gramps-date`](https://www.npmjs.com/package/@gramps-connect/gramps-date):
+Gramps' own date parser, in all of Gramps' languages. Pass
+`parseDateText` to use another. Fields the editor doesn't know are kept as
+they are, so opening and saving a story never loses anything.
+
+The editor is built with [Mantine](https://mantine.dev) 8 (optional peer
+dependencies `@mantine/core` and `@mantine/hooks`, needed only by the
+editor): wrap it in a `MantineProvider` and load Mantine's stylesheet. The
+pieces it's made of (`SlideList`, `StoryTextField`, `DateField`) and its
+editing functions (`addSlide`, `moveSlide`, `updateSlide`, undo history,
+...) are exported too.
 
 ## Writing stories from Python: `python/gramps_connect_story.py`
 
@@ -168,13 +215,13 @@ identical.
 npm install
 npm test               # Node tests (examples, versioning, validation, zip handling)
 npm run test:browser   # in headless Google Chrome: optimizeImage(), the player,
-                       # the embed (cross-origin) and the viewer site
+                       # the embed (cross-origin), the viewer site and the editor
 npm run test:pack      # what npm would get, installed into an empty project
 npm run test:python    # the Python writer, and its output read by this package
 npm run typecheck
 npm run generate       # after editing spec/*/story.schema.json
 npm run build          # dist/ (what npm users get)
-npm run build:site     # site-dist/ (the viewer)
+npm run build:site     # site-dist/ (the viewer and the editor)
 ```
 
 Gramps Connect includes this repo as a git submodule and compiles `src/`

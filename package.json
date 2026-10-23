@@ -31,6 +31,11 @@
       "types": "./dist/types/player/index.d.ts",
       "default": "./dist/player.js"
     },
+    "./editor": {
+      "source": "./src/editor/index.ts",
+      "types": "./dist/types/editor/index.d.ts",
+      "default": "./dist/editor.js"
+    },
     "./embed": "./dist/embed.js",
     "./schema/1.0": "./spec/1.0/story.schema.json",
     "./package.json": "./package.json"
@@ -51,17 +56,20 @@
     "build:site": "node scripts/build.mjs && node scripts/build-site.mjs",
     "prepack": "node scripts/build.mjs",
     "generate": "node scripts/generate-validator.mjs",
-    "test": "tsx --test src/__tests__/*.test.ts",
+    "test": "tsx --conditions=source --test src/__tests__/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs && npm run build:site && node scripts/test-embed.mjs && node scripts/test-site.mjs",
+    "test:browser": "node scripts/test-image.mjs && node scripts/test-player.mjs && npm run build:site && node scripts/test-embed.mjs && node scripts/test-site.mjs && node scripts/test-editor.mjs",
     "test:pack": "node scripts/test-pack.mjs",
     "test:python": "${PYTHON:-python3} -m unittest discover -s python && tsx scripts/test-python.ts"
   },
   "dependencies": {
-    "fflate": "^0.8.3",
-    "@openhistoricalmap/maplibre-gl-dates": "^1.4.0"
+    "@gramps-connect/gramps-date": "^0.1.0",
+    "@openhistoricalmap/maplibre-gl-dates": "^1.4.0",
+    "fflate": "^0.8.3"
   },
   "devDependencies": {
+    "@mantine/core": "^8.3.18",
+    "@mantine/hooks": "^8.3.18",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^26.1.2",
     "@types/react": "^18.3.12",
@@ -76,11 +84,19 @@
     "typescript": "^7.0.2"
   },
   "peerDependencies": {
+    "@mantine/core": "^8",
+    "@mantine/hooks": "^8",
     "maplibre-gl": ">=5",
     "react": "^18.2 || ^19",
     "react-dom": "^18.2 || ^19"
   },
   "peerDependenciesMeta": {
+    "@mantine/core": {
+      "optional": true
+    },
+    "@mantine/hooks": {
+      "optional": true
+    },
     "maplibre-gl": {
       "optional": true
     },

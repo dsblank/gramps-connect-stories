@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
 import { StoryPlayer, ViewerBrand, ViewerIcon } from "../src/player/index";
+import { loadDraft, saveDraft, type Draft } from "./drafts";
 
 maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).href);
 
@@ -42,6 +43,10 @@ function errorText(err: unknown): string {
 function App() {
   const dark = usePrefersDark();
   const [story, setStory] = useState<StoryPackage | null>(null);
+  // The file the story came from, for the editor to save back under.
+  const [fileName, setFileName] = useState<string | undefined>(undefined);
+  // A story left open in the editor, offered back on the landing page.
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [initialSlide, setInitialSlide] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +59,7 @@ function App() {
     urls.current.clear();
   };
 
-  const open = useCallback(async (input: Blob | Promise<Blob>, keepUrl: boolean) => {
+  const open = useCallback(async (input: Blob | Promise<Blob>, keepUrl: boolean, name?: string) => {
     setError(null);
     setLoading(true);
     try {
@@ -62,6 +67,7 @@ function App() {
       release();
       setInitialSlide(slideFromHash(pkg));
       setStory(pkg);
+      setFileName(name);
       document.title = pkg.doc.title;
       if (!keepUrl) history.replaceState(null, "", location.pathname);
     } catch (err) {
@@ -74,7 +80,10 @@ function App() {
   // ?src=<url of a .story.zip>
   useEffect(() => {
     const src = new URLSearchParams(location.search).get("src");
-    if (!src) return;
+    if (!src) {
+      void loadDraft().then(setDraft);
+      return;
+    }
     void open(
       fetch(new URL(src, location.href)).then((res) => {
         if (!res.ok) throw new Error(`Couldn't fetch ${src} (${res.status}).`);
@@ -83,6 +92,7 @@ function App() {
         throw new Error(err instanceof TypeError ? `Couldn't fetch ${src}. If it's on another website, that site has to allow it (CORS).` : errorText(err));
       }),
       true,
+      decodeURIComponent(src.split("/").pop() || "") || undefined,
     );
   }, [open]);
 
@@ -116,8 +126,21 @@ function App() {
     history.replaceState(null, "", `${location.pathname}${location.search}${id ? `#${encodeURIComponent(id)}` : ""}`);
   }, [story]);
 
+  // Hands the open story to the editor page, as its draft. Asks first if
+  // that would replace a different story with changes nobody saved.
+  const edit = async () => {
+    if (!story) return;
+    const existing = await loadDraft();
+    if (existing && JSON.stringify(existing.doc) !== existing.savedJson
+      && !window.confirm(`Replace the unsaved changes to "${existing.doc.title}" in the editor?`)) return;
+    const doc = story.doc;
+    await saveDraft({ doc, files: story.files, fileName, savedJson: JSON.stringify(doc), updated: Date.now() });
+    location.href = "edit.html";
+  };
+
   const close = () => {
     release();
+    void loadDraft().then(setDraft);
     setStory(null);
     document.title = "Gramps Connect Story Viewer";
     history.replaceState(null, "", location.pathname);
@@ -134,6 +157,7 @@ function App() {
           onSlideChange={onSlideChange}
           onClose={close}
           brand={<ViewerBrand href={location.pathname} target="_self" />}
+          actions={<button type="button" className="bar-button" onClick={() => void edit()}>Edit</button>}
         />
       </div>
     );
@@ -143,7 +167,7 @@ function App() {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file) void open(file, false);
+    if (file) void open(file, false, file.name);
   };
 
   const embed = `<script type="module"
@@ -177,11 +201,16 @@ function App() {
             onChange={(e) => {
               const file = e.currentTarget.files?.[0];
               e.currentTarget.value = "";
-              if (file) void open(file, false);
+              if (file) void open(file, false, file.name);
             }}
           />
         </div>
         {error && <div className="error" role="alert">{error}</div>}
+        <p className="small" style={{ marginTop: 12 }}>
+          {draft
+            ? <>Continue editing <a href="edit.html">{draft.doc.title}</a>, or <a href="edit.html?new">start a new story</a>.</>
+            : <>Or <a href="edit.html?new">make a new story</a> in the Story Editor.</>}
+        </p>
 
         <p className="small" style={{ marginTop: 16 }}>
           Your story stays on your computer: nothing is uploaded. Only the map's background comes from the internet
@@ -201,7 +230,9 @@ function App() {
         <h2>Making a story</h2>
         <p>
           In <a href="https://github.com/dsblank/gramps-connect">Gramps Connect</a>, open a story and choose{" "}
-          <b>Download</b>. Other programs can write stories too: the format is open and documented.
+          <b>Download</b>. To change a story, open it here and
+          choose <b>Edit</b>, or start one from scratch in the <a href="edit.html">Story Editor</a>. Other programs
+          can write stories too: the format is open and documented.
         </p>
 
         <h2>For developers</h2>

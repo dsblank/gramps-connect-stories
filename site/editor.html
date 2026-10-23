@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Story Editor</title>
+  <meta name="description" content="Edit a family-history story (.story.zip): titles, dates, text and the order of its slides. Nothing is uploaded: the story stays on your computer.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%231866ba'/%3E%3Cg transform='translate(9.6 9.6) scale(0.7)'%3E%3Cpath d='M25 32h7M32 15v34M32 15h7M32 49h7' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cg fill='%23fff'%3E%3Crect x='1' y='24' width='24' height='16' rx='4'/%3E%3Crect x='39' y='7' width='24' height='16' rx='4'/%3E%3Crect x='39' y='41' width='24' height='16' rx='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./editor.css">
+  <style>
+    html, body, #root { margin: 0; height: 100%; }
+    body { background: var(--mantine-color-body, #fff); }
+    @media (prefers-color-scheme: dark) { body { background: var(--mantine-color-body, #242424); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>The Story Editor needs JavaScript.</noscript>
+  <script type="module" src="./editor.js"></script>
+</body>
+</html>
