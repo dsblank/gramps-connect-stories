@@ -47,7 +47,18 @@ jobs:
       - run: npm run test:browser
       - run: npm run test:pack
 
+      # A version published by hand (e.g. the first, before trusted
+      # publishing could be set up) is tagged without publishing again.
+      - name: Already on npm?
+        id: published
+        run: |
+          if npm view "$(node -p 'require("./package.json").name')@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
+            echo "Already published; skipping." >&2
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish
+        if: steps.published.outputs.skip != 'true'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
