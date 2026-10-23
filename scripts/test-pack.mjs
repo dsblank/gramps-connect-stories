@@ -20,7 +20,9 @@ try {
   // Build as `prepack` would, then pack without scripts so the build's own
   // output doesn't land in pack's JSON.
   run(process.execPath, [join(root, "scripts/build.mjs")], root);
-  const [packed] = JSON.parse(run(npm, ["pack", "--json", "--ignore-scripts", "--pack-destination", work], root));
+  // npm 10 prints an array of packages; npm 12 an object keyed by name.
+  const output = JSON.parse(run(npm, ["pack", "--json", "--ignore-scripts", "--pack-destination", work], root));
+  const [packed] = Array.isArray(output) ? output : Object.values(output);
   const files = packed.files.map((f) => f.path).sort();
   for (const required of [
     "LICENSE", "README.md", "package.json",
