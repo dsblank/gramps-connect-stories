@@ -201,7 +201,7 @@ try {
   });
   await page.getByRole("option", { name: /Emigration/ }).click();
   await page.getByRole("button", { name: "Remove place" }).click();
-  assert.equal(await coordinates.inputValue(), "");
+  await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "");
   await field("Name").fill("Bremerhaven");
   await page.getByRole("button", { name: "Find on Wikidata" }).click();
   await page.getByRole("listitem").filter({ hasText: "port city in Germany" }).click();

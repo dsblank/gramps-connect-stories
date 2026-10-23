@@ -26,11 +26,12 @@ try {
   const files = packed.files.map((f) => f.path).sort();
   for (const required of [
     "LICENSE", "README.md", "package.json",
-    "dist/index.js", "dist/player.js", "dist/editor.js", "dist/embed.js",
+    "dist/index.js", "dist/player.js", "dist/editor.js", "dist/map-edit.js", "dist/embed.js",
     "dist/maplibre-gl-worker.mjs", "dist/maplibre-gl-shared.mjs",
     "dist/types/index.d.ts", "dist/types/player/index.d.ts", "dist/types/editor/index.d.ts",
+    "dist/types/mapEdit/index.d.ts",
     "spec/1.0/story.schema.json", "spec/1.0/README.md",
-    "src/index.ts", "src/player/index.ts", "src/editor/index.ts",
+    "src/index.ts", "src/player/index.ts", "src/editor/index.ts", "src/mapEdit/index.ts",
   ]) {
     assert.ok(files.includes(required), `${required} is missing from the package`);
   }
@@ -65,6 +66,7 @@ try {
     import { readStoryZip, mediaBlob, type StoryDoc } from "@gramps-connect/story";
     import { StoryPlayer, stringsFor } from "@gramps-connect/story/player";
     import { StoryEditor, suggestEdtf } from "@gramps-connect/story/editor";
+    import { mapItemToGeoJson, parseMapFile, prepareForEditing, rotatePoint } from "@gramps-connect/story/map-edit";
     import "@gramps-connect/story/embed";
     import schema from "@gramps-connect/story/schema/1.0" with { type: "json" };
     maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -77,6 +79,8 @@ try {
     export function edit(doc: StoryDoc) {
       return <StoryEditor initialStory={doc} initialFiles={new Map()} parseDateText={suggestEdtf} />;
     }
+    export const shapes = prepareForEditing(parseMapFile(mapItemToGeoJson([], [{ handle: "h", corners: [[0, 1], [1, 1], [1, 0], [0, 0]] }])));
+    export const turned: [number, number] = rotatePoint([1, 0], [0, 0], 90);
   `);
   writeFileSync(join(project, "tsconfig.json"), JSON.stringify({
     compilerOptions: {

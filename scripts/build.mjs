@@ -6,7 +6,9 @@
 //                   including maplibre's stylesheet
 //   editor.js       the React editor (Mantine), ES module, imports kept the
 //                   same way
-//   types/          TypeScript declarations for all three
+//   map-edit.js     the map editor's model, map files and geometry: plain
+//                   functions, no React
+//   types/          TypeScript declarations for all four
 //   embed.js        <gramps-connect-story>: everything bundled into one
 //                   file for a plain <script type="module"> tag
 //   maplibre-gl-worker.mjs, maplibre-gl-shared.mjs
@@ -36,7 +38,7 @@ const external = [
 ];
 await build({
   absWorkingDir: root,
-  entryPoints: { index: "src/index.ts", player: "src/player/index.ts", editor: "src/editor/index.ts" },
+  entryPoints: { index: "src/index.ts", player: "src/player/index.ts", editor: "src/editor/index.ts", "map-edit": "src/mapEdit/index.ts" },
   outdir: dist,
   bundle: true,
   format: "esm",

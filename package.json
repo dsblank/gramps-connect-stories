@@ -36,6 +36,11 @@
       "types": "./dist/types/editor/index.d.ts",
       "default": "./dist/editor.js"
     },
+    "./map-edit": {
+      "source": "./src/mapEdit/index.ts",
+      "types": "./dist/types/mapEdit/index.d.ts",
+      "default": "./dist/map-edit.js"
+    },
     "./embed": "./dist/embed.js",
     "./schema/1.0": "./spec/1.0/story.schema.json",
     "./package.json": "./package.json"
@@ -65,6 +70,7 @@
   "dependencies": {
     "@gramps-connect/gramps-date": "^0.1.0",
     "@openhistoricalmap/maplibre-gl-dates": "^1.4.0",
+    "@tmcw/togeojson": "^7.1.2",
     "fflate": "^0.8.3"
   },
   "devDependencies": {
