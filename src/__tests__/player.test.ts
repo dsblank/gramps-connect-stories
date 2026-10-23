@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseStoryText } from "../player/text";
 import { dateCoversYear, edtfYearRange, timelineYear } from "../player/dates";
-import { placeBounds, placeCenter } from "../player/geo";
+import { placeBounds, placeCenter, storyPlaces } from "../player/geo";
 import { axisTicks, storyDomain, tickLabel, xForYear } from "../player/timelineLayout";
 
 test("text: bold, italic, line breaks and paragraphs", () => {
@@ -72,6 +72,17 @@ test("geo: a place's point, or the middle of its shape and overlays", () => {
   assert.deepEqual(placeBounds({ geometry: { type: "FeatureCollection", features: [] } }), null);
   assert.equal(placeCenter({ name: "Nowhere" }), null);
   assert.equal(placeCenter(undefined), null);
+});
+
+test("geo: the story's places, for its opening view", () => {
+  const shaped = {
+    geometry: { type: "Feature", geometry: { type: "LineString", coordinates: [[0, 49], [2, 51]] } },
+  };
+  const found = storyPlaces([undefined, { lat: 47, lon: 8 }, { name: "Nowhere" }, { lat: 47, lon: 8 }, shaped as never]);
+  // Zürich twice is one point; the line's middle is the other.
+  assert.deepEqual(found?.points, [[8, 47], [1, 50]]);
+  assert.deepEqual(found?.bounds, [0, 47, 8, 51]);
+  assert.equal(storyPlaces([undefined, { name: "Nowhere" }]), null);
 });
 
 test("timeline layout", () => {

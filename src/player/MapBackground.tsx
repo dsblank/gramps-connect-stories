@@ -12,7 +12,7 @@ import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from
 import type { FeatureCollection, GeoJSON } from "geojson";
 import type { Overlay, Place } from "../types";
 import { dateCoversYear } from "./dates";
-import { placeBounds, placeCenter } from "./geo";
+import { placeBounds, placeCenter, type StoryPlaces } from "./geo";
 import { applyOhmYear, crossfadeStyleSwap, mapStyleKey, mapStyleUrl } from "./mapStyles";
 import { PIN_PATH_D, type PlayerColors } from "./theme";
 
@@ -22,6 +22,11 @@ const LINE_LAYER = "story-shape-line";
 const POINT_LAYER = "story-shape-points";
 const LABEL_LAYER = "story-shape-labels";
 const OVERLAY_PREFIX = "story-overlay-";
+const PLACES_SOURCE = "story-places";
+const PLACES_LAYER = "story-places-dots";
+// Room around the outermost dots of the opening view, inside the part of
+// the map the slide panel leaves free.
+const OVERVIEW_PADDING = 60;
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** The current slide, as far as the map cares. `key` is the slide id:
@@ -29,11 +34,21 @@ const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 export interface MapSlide {
   key: string;
   place: Place | undefined;
+  /** Every place in the story, on an opening slide with no place of its
+   * own: framed together, a dot each, instead of the pin. */
+  overview: StoryPlaces | null;
 }
 
-/** Frame the place's shape or overlays (usually a field, a route or an old
- * map, far tighter than a town-level zoom), else fly to its point. */
-function moveCamera(map: MapLibreMap, place: Place | undefined, duration: number) {
+/** Frame the story's places for an overview; else the place's shape or
+ * overlays (usually a field, a route or an old map, far tighter than a
+ * town-level zoom); else fly to its point. */
+function moveCamera(map: MapLibreMap, slide: MapSlide, duration: number) {
+  if (slide.overview) {
+    const [west, south, east, north] = slide.overview.bounds;
+    map.fitBounds([[west, south], [east, north]], { maxZoom: 9, padding: OVERVIEW_PADDING, duration });
+    return;
+  }
+  const place = slide.place;
   const bounds = placeBounds(place);
   if (bounds) {
     map.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { maxZoom: 17, duration });
@@ -43,12 +58,23 @@ function moveCamera(map: MapLibreMap, place: Place | undefined, duration: number
   if (center) map.flyTo({ center, zoom: 9, essential: true, duration });
 }
 
-/** The pin on the place; held where it was, dimmed, for a slide with none. */
-function placeMarker(marker: MapLibreMarker | null, center: [number, number] | null) {
+/** The pin on the place; hidden for an overview (the dots stand in for
+ * it), else held where it was, dimmed, for a slide with no place. */
+function placeMarker(marker: MapLibreMarker | null, slide: MapSlide) {
   if (!marker) return;
+  const center = placeCenter(slide.place);
   if (center) marker.setLngLat(center);
-  marker.getElement().style.opacity = center ? "1" : "0.4";
+  // Through the marker, not its element's style: maplibre rewrites that
+  // from the marker's own opacity every frame.
+  marker.setOpacity(slide.overview ? 0 : center ? 1 : 0.4);
 }
+
+const placeDots = (overview: StoryPlaces | null): FeatureCollection => ({
+  type: "FeatureCollection",
+  features: (overview?.points ?? []).map((coordinates) => ({
+    type: "Feature", properties: {}, geometry: { type: "Point", coordinates },
+  })),
+});
 
 export function MapBackground({ initialCenter, current, dark, colors, panelFraction, ohmYear, resolveMedia }: {
   initialCenter: [number, number];
@@ -105,10 +131,9 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
     // Straight to the opening slide's place, unanimated. The camera effect
     // below ran for it before this map existed (the container arrives a
     // render late), so a story opened partway through starts there too.
-    const start = currentRef.current.place;
-    const startCenter = placeCenter(start);
-    map.jumpTo({ center: startCenter ?? initialCenter });
-    if (startCenter) moveCamera(map, start, 0);
+    const start = currentRef.current;
+    map.jumpTo({ center: placeCenter(start.place) ?? initialCenter });
+    moveCamera(map, start, 0);
     map.on("load", () => {
       const c = colorsRef.current;
       const el = document.createElement("div");
@@ -120,7 +145,7 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
         + `</svg>`;
       // The pin's tip, not its middle, sits on the coordinate.
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" }).setLngLat(initialCenter).addTo(map);
-      placeMarker(markerRef.current, placeCenter(currentRef.current.place));
+      placeMarker(markerRef.current, currentRef.current);
     });
     return () => {
       markerRef.current?.remove();
@@ -186,18 +211,25 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
         "text-halo-width": 1.5,
       },
     });
+    map.addSource(PLACES_SOURCE, { type: "geojson", data: EMPTY });
+    map.addLayer({
+      id: PLACES_LAYER, type: "circle", source: PLACES_SOURCE,
+      paint: { "circle-radius": 6, "circle-color": c.mark, "circle-stroke-width": 2, "circle-stroke-color": c.surface },
+    });
   }, [ready]);
 
   const place = current.place;
 
-  // The current slide's shape. Re-supplied after each style load, since a
+  // The current slide's shape, or the overview's dots. Re-supplied after each style load, since a
   // swap empties the source.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const source = map.getSource(SHAPE_SOURCE) as GeoJSONSource | undefined;
     source?.setData((place?.geometry as GeoJSON | undefined) ?? EMPTY);
-  }, [ready, current.key, place]);
+    const dots = map.getSource(PLACES_SOURCE) as GeoJSONSource | undefined;
+    dots?.setData(placeDots(current.overview));
+  }, [ready, current.key, place, current.overview]);
 
   // Camera: once per slide (see moveCamera). Keyed to the slide, not to `ready`, so a
   // map-mode switch never yanks the view back from wherever the viewer
@@ -205,10 +237,9 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const center = placeCenter(place);
-    placeMarker(markerRef.current, center);
-    // No place: the camera stays put.
-    if (center) moveCamera(map, place, 900);
+    placeMarker(markerRef.current, current);
+    // No place and no overview: the camera stays put.
+    moveCamera(map, current, 900);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.key]);
 

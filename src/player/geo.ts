@@ -44,3 +44,25 @@ export function placeCenter(place: Place | undefined): LonLat | null {
   const bounds = placeBounds(place);
   return bounds ? [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2] : null;
 }
+
+export interface StoryPlaces {
+  points: LonLat[];
+  bounds: Bounds;
+}
+
+/** Every place in the story at once, for its opening view: one point per
+ * distinct place, and the box around all of them, shapes and overlays
+ * included. Null when no slide has a position. */
+export function storyPlaces(places: (Place | undefined)[]): StoryPlaces | null {
+  const bounds: Bounds = [Infinity, Infinity, -Infinity, -Infinity];
+  const points = new Map<string, LonLat>();
+  for (const place of places) {
+    const center = placeCenter(place);
+    if (!center) continue;
+    points.set(`${center[0].toFixed(5)},${center[1].toFixed(5)}`, center);
+    visit(center, bounds);
+    const box = placeBounds(place);
+    if (box) visit([[box[0], box[1]], [box[2], box[3]]], bounds);
+  }
+  return points.size ? { points: [...points.values()], bounds } : null;
+}

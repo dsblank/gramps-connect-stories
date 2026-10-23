@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from "react";
 import type { MediaItem, Slide, StoryDoc } from "../types";
 import { timelineYear } from "./dates";
-import { placeCenter } from "./geo";
+import { placeCenter, storyPlaces } from "./geo";
 import { MapBackground, type MapSlide } from "./MapBackground";
 import { MapModeControl, type MapMode, type MapModeControlProps } from "./MapModeControl";
 import { parseStoryText } from "./text";
@@ -299,7 +299,13 @@ export function StoryPlayer({
 
   // Stable per slide, so a re-render for an unrelated reason (a map-mode
   // click) never looks like a new slide to the map's camera.
-  const mapSlide = useMemo<MapSlide>(() => ({ key: slide?.id ?? String(index), place: slide?.place }), [slide, index]);
+  const places = useMemo(() => storyPlaces(slides.map((s) => s.place)), [slides]);
+  const mapSlide = useMemo<MapSlide>(() => ({
+    key: slide?.id ?? String(index),
+    place: slide?.place,
+    // The opening card, with no place of its own, shows where the story goes.
+    overview: index === 0 && !placeCenter(slide?.place) ? places : null,
+  }), [slide, index, places]);
   const firstCenter = useMemo(() => {
     if (story.presentation?.basemap === "none") return null;
     for (const s of slides) {

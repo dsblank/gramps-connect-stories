@@ -118,6 +118,17 @@ try {
   const timeline = (what) => page.$$eval(`svg:has(line) ${what}`, (els) => els.length);
   assert.equal(await timeline("circle"), 3);
   assert.equal(await timeline("path"), 0);
+  // The opening card has no place: the map frames all of the story's
+  // places (Zürich to Le Havre), a dot on each, and the pin is hidden.
+  const dots = () => page.evaluate(() => window.storyMap.queryRenderedFeatures({ layers: ["story-places-dots"] }).length);
+  await page.waitForFunction(() => window.storyMap?.getLayer("story-places-dots")
+    && window.storyMap.queryRenderedFeatures({ layers: ["story-places-dots"] }).length === 3, null, { timeout: 30_000 });
+  assert.equal(await page.evaluate(() => {
+    const b = window.storyMap.getBounds();
+    return b.contains([8.54, 47.37]) && b.contains([0.1079, 49.4944]);
+  }), true);
+  await page.waitForSelector(".maplibregl-marker", { timeout: 30_000 });
+  assert.equal(await page.$eval(".maplibregl-marker", (el) => el.style.opacity), "0");
 
   await page.keyboard.press("ArrowRight");
   await page.waitForFunction(() => document.getElementById("root").innerText.includes("Birth of Josef Meyer"));
@@ -127,6 +138,9 @@ try {
   assert.equal(await timeline("path"), 1);
   // Markup is rendered as elements, not HTML.
   assert.deepEqual(await page.$$eval("p i, p b", (els) => els.map((e) => `${e.tagName}:${e.textContent}`)), ["I:about", "B:Zürich"]);
+  // Past the opening card: no dots, and the pin is back.
+  await page.waitForFunction(() => window.storyMap.queryRenderedFeatures({ layers: ["story-places-dots"] }).length === 0);
+  assert.equal(await page.$eval(".maplibregl-marker", (el) => el.style.opacity), "1");
   // The overlay's image is asked for, and the pin is on the map.
   await page.waitForFunction(() => window.mediaCalls.includes("map-1850"));
   // The marker appears once the map has loaded, which waits on basemap tiles.
