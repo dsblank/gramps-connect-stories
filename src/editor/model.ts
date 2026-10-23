@@ -4,7 +4,7 @@
 // know (a newer minor version's, an extension's) ride along untouched:
 // opening and saving a story must never lose anything.
 import { FORMAT_ID, FORMAT_VERSION } from "../version";
-import type { Slide, StoryDate, StoryDoc } from "../types";
+import type { MediaItem, Slide, SlideMedia, StoryDate, StoryDoc } from "../types";
 
 /** A story with one empty slide: the smallest valid one. */
 export function blankStory(title: string, language?: string): StoryDoc {
@@ -98,6 +98,68 @@ export function slideDate(previous: StoryDate | undefined, text: string, edtf: s
   const next = patched(previous ?? { text }, { text, edtf: edtf || undefined });
   if (next.edtf !== previous?.edtf) delete next.sortYear;
   return next;
+}
+
+/** A prepared image to add to a story (see optimizeImage). */
+export interface NewImage {
+  data: Uint8Array;
+  mime: string;
+  /** File extension, without the dot. */
+  ext: string;
+  width?: number;
+  height?: number;
+}
+
+function sameBytes(a: Uint8Array | undefined, b: Uint8Array): boolean {
+  if (!a || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+/** The media key whose file is exactly these bytes, if any: a photo
+ * that's already in the story, chosen again. */
+export function findMedia(doc: StoryDoc, files: Map<string, Uint8Array>, data: Uint8Array): string | undefined {
+  for (const [key, item] of Object.entries(doc.media)) {
+    if (sameBytes(files.get(item.src), data)) return key;
+  }
+  return undefined;
+}
+
+/** Adds an image to the story's media (not to any slide), or finds the
+ * identical one already there, so the same photo is stored once. Returns
+ * its media key. */
+export function addImage(
+  doc: StoryDoc, files: Map<string, Uint8Array>, image: NewImage, stem = "photo",
+): { doc: StoryDoc; files: Map<string, Uint8Array>; key: string } {
+  const existing = findMedia(doc, files, image.data);
+  if (existing) return { doc, files, key: existing };
+  let n = 1;
+  const taken = (key: string) => Object.prototype.hasOwnProperty.call(doc.media, key) || files.has(`media/${key}.${image.ext}`);
+  while (taken(`${stem}-${n}`)) n += 1;
+  const key = `${stem}-${n}`;
+  const src = `media/${key}.${image.ext}`;
+  const item: MediaItem = {
+    src, mime: image.mime,
+    ...(image.width ? { width: image.width } : {}),
+    ...(image.height ? { height: image.height } : {}),
+  };
+  return {
+    doc: { ...doc, media: { ...doc.media, [key]: item } },
+    files: new Map(files).set(src, image.data),
+    key,
+  };
+}
+
+/** A slide's photo list; an empty one removes the field. */
+export function setSlidePhotos(doc: StoryDoc, index: number, media: SlideMedia[]): StoryDoc {
+  return updateSlide(doc, index, { media: media.length ? media : undefined });
+}
+
+/** Changes a media item itself (its description, shared by every slide
+ * that shows it). */
+export function updateMedia(doc: StoryDoc, key: string, patch: Partial<MediaItem>): StoryDoc {
+  if (!Object.prototype.hasOwnProperty.call(doc.media, key)) return doc;
+  return { ...doc, media: { ...doc.media, [key]: patched(doc.media[key], patch) } };
 }
 
 /** Every media key a slide or overlay refers to. */

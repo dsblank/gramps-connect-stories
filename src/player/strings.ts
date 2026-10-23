@@ -15,6 +15,8 @@ export interface PlayerStrings {
   historicalMapYear: (year: number) => string;
   noDateStandardMap: string;
   historicalYear: string;
+  /** A photo's thumbnail button, on a slide with several. */
+  photoOf: (n: number, total: number) => string;
 }
 
 export const ENGLISH: PlayerStrings = {
@@ -28,6 +30,7 @@ export const ENGLISH: PlayerStrings = {
   historicalMapYear: (year) => `Historical map, ${year}`,
   noDateStandardMap: "No date here — standard map",
   historicalYear: "Historical map year",
+  photoOf: (n, total) => `Photo ${n} of ${total}`,
 };
 
 const TABLE: Record<string, PlayerStrings> = {
@@ -43,6 +46,7 @@ const TABLE: Record<string, PlayerStrings> = {
     historicalMapYear: (year) => `Historische Karte, ${year}`,
     noDateStandardMap: "Kein Datum hier — Standardkarte",
     historicalYear: "Jahr der historischen Karte",
+    photoOf: (n, total) => `Foto ${n} von ${total}`,
   },
   es: {
     previous: "Anterior",
@@ -55,6 +59,7 @@ const TABLE: Record<string, PlayerStrings> = {
     historicalMapYear: (year) => `Mapa histórico, ${year}`,
     noDateStandardMap: "Sin fecha aquí — mapa estándar",
     historicalYear: "Año del mapa histórico",
+    photoOf: (n, total) => `Foto ${n} de ${total}`,
   },
   fr: {
     previous: "Précédent",
@@ -67,6 +72,7 @@ const TABLE: Record<string, PlayerStrings> = {
     historicalMapYear: (year) => `Carte historique, ${year}`,
     noDateStandardMap: "Pas de date ici — carte standard",
     historicalYear: "Année de la carte historique",
+    photoOf: (n, total) => `Photo ${n} sur ${total}`,
   },
   nl: {
     previous: "Vorige",
@@ -79,6 +85,7 @@ const TABLE: Record<string, PlayerStrings> = {
     historicalMapYear: (year) => `Historische kaart, ${year}`,
     noDateStandardMap: "Geen datum hier — standaardkaart",
     historicalYear: "Jaar van de historische kaart",
+    photoOf: (n, total) => `Foto ${n} van ${total}`,
   },
 };
 

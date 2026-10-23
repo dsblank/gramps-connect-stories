@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { validate } from "../validate";
 import type { StoryDoc } from "../types";
 import {
-  addSlide, blankStory, deleteSlide, duplicateSlide, moveSlide, nextSlideId, pruneMedia, record, redo, slideDate,
-  startHistory, storyFileName, undo, updateSlide, updateStory,
+  addImage, addSlide, blankStory, deleteSlide, duplicateSlide, findMedia, moveSlide, nextSlideId, pruneMedia, record, redo, slideDate,
+  setSlidePhotos, startHistory, storyFileName, undo, updateMedia, updateSlide, updateStory,
 } from "../editor/model";
 import { suggestEdtf } from "../editor/dates";
 
@@ -130,4 +130,37 @@ test("editor: date text to EDTF, in the story's language", async () => {
   assert.equal(await suggestEdtf("vers 1850", "fr-CA"), "1850~");
   assert.equal(await suggestEdtf("spring 1850", "en"), undefined);
   assert.equal(await suggestEdtf("", "en"), undefined);
+});
+
+test("editor: adding photos stores each image once", () => {
+  const doc = story();
+  const files = new Map([["media/photo.webp", new Uint8Array([1, 2, 3])]]);
+  const image = { data: new Uint8Array([9, 9]), mime: "image/webp", ext: "webp", width: 800, height: 600 };
+  const first = addImage(doc, files, image);
+  assert.equal(first.key, "photo-1");
+  assert.deepEqual(first.doc.media["photo-1"], { src: "media/photo-1.webp", mime: "image/webp", width: 800, height: 600 });
+  assert.deepEqual(first.files.get("media/photo-1.webp"), image.data);
+  assert.equal(files.size, 1); // the original map is untouched
+  // The same bytes again: the same media, nothing new.
+  const again = addImage(first.doc, first.files, { ...image, data: new Uint8Array([9, 9]) });
+  assert.equal(again.key, "photo-1");
+  assert.equal(again.doc, first.doc);
+  // An image already in the story under its own name is found too.
+  assert.equal(addImage(doc, files, { data: new Uint8Array([1, 2, 3]), mime: "image/webp", ext: "webp" }).key, "photo");
+  // A different image gets the next free name.
+  assert.equal(addImage(first.doc, first.files, { ...image, data: new Uint8Array([7]) }).key, "photo-2");
+  // Chosen again before any preparing: found by its bytes.
+  assert.equal(findMedia(doc, files, new Uint8Array([1, 2, 3])), "photo");
+  assert.equal(findMedia(doc, files, new Uint8Array([1, 2])), undefined);
+});
+
+test("editor: a slide's photos, and a photo's description", () => {
+  let doc = setSlidePhotos(story(), 0, [{ ref: "photo", caption: "Front" }]);
+  assert.deepEqual(doc.slides[0].media, [{ ref: "photo", caption: "Front" }]);
+  doc = setSlidePhotos(doc, 0, []);
+  assert.equal("media" in doc.slides[0], false);
+  doc = updateMedia(doc, "photo", { alt: "A man in a hat" });
+  assert.equal(doc.media.photo.alt, "A man in a hat");
+  assert.equal(doc.media.photo.src, "media/photo.webp");
+  assert.equal(updateMedia(doc, "nope", { alt: "x" }), doc);
 });

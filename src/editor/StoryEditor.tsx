@@ -6,21 +6,23 @@
 //
 // Needs Mantine: wrap it in a MantineProvider and load @mantine/core's
 // stylesheet, as with any Mantine component.
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActionIcon, Badge, Box, Button, Divider, Group, Modal, Popover, Select, Stack, Text, TextInput, Tooltip, UnstyledButton,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import type { MediaItem, Slide, StoryDoc } from "../types";
+import type { MediaItem, Slide, SlideMedia, StoryDoc } from "../types";
+import { optimizeImage } from "../image";
 import { validate, type StoryIssue } from "../validate";
 import { StoryPlayer } from "../player/StoryPlayer";
 import type { PlayerStrings } from "../player/strings";
 import { suggestEdtf, type DateTextParser } from "./dates";
 import { DateField } from "./DateField";
 import {
-  addSlide, deleteSlide, duplicateSlide, moveSlide, record, redo, startHistory, undo, updateSlide, updateStory,
-  type History,
+  addImage, addSlide, deleteSlide, findMedia, duplicateSlide, moveSlide, record, redo, setSlidePhotos, startHistory, undo, updateMedia,
+  updateSlide, updateStory, type History, type NewImage,
 } from "./model";
+import { PhotosField } from "./PhotosField";
 import { SlideList } from "./SlideList";
 import { StoryTextField } from "./StoryTextField";
 import { EDITOR_ENGLISH, type EditorStrings } from "./strings";
@@ -30,15 +32,19 @@ const BAR_HEIGHT = 56;
 const STORY = -1;
 
 export interface StoryEditorProps {
-  /** The story to start from. Changing it later has no effect: remount
-   * (a new `key`) to edit another. */
+  /** The story to start from, and its files (paths as in media `src`).
+   * Changing these later has no effect: remount (a new `key`) to edit
+   * another story. */
   initialStory: StoryDoc;
-  /** The story's files, for checking that every media file is there. */
-  files?: { has(path: string): boolean };
-  /** As for StoryPlayer. */
-  resolveMedia: (key: string, item: MediaItem) => Promise<string | null>;
-  /** Called with the document after every change, undo and redo included. */
-  onChange?: (doc: StoryDoc) => void;
+  initialFiles?: Map<string, Uint8Array>;
+  /** Called with the document and its files after every change, undo and
+   * redo included. The files only grow while editing (an undone photo's
+   * file stays); pruneMedia leaves out what nothing uses when saving. */
+  onChange?: (doc: StoryDoc, files: Map<string, Uint8Array>) => void;
+  /** Turns a chosen image file into what's stored. By default
+   * optimizeImage: 1600px WebP (JPEG where the browser can't), with the
+   * original's metadata left behind. */
+  prepareImage?: (file: Blob) => Promise<NewImage>;
   /** The host's own buttons (Open, Save, ...), at the right of the top bar. */
   toolbar?: ReactNode;
   /** Shown first in the top bar, e.g. ViewerBrand. */
@@ -56,7 +62,15 @@ function issueSlide(issue: StoryIssue): number {
   return match ? Number(match[1]) : STORY;
 }
 
-function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; resolveMedia: StoryEditorProps["resolveMedia"] }) {
+type Resolve = (key: string, item: MediaItem) => Promise<string | null>;
+
+/** The default prepareImage. */
+export async function prepareImage(file: Blob): Promise<NewImage> {
+  const image = await optimizeImage(file);
+  return { data: new Uint8Array(await image.blob.arrayBuffer()), mime: image.mime, ext: image.ext, width: image.width, height: image.height };
+}
+
+function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; resolveMedia: Resolve }) {
   const ref = slide.media?.[0]?.ref;
   const item = ref && Object.prototype.hasOwnProperty.call(doc.media, ref) ? doc.media[ref] : undefined;
   const [url, setUrl] = useState<string | null>(null);
@@ -77,8 +91,8 @@ function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; reso
 }
 
 export function StoryEditor({
-  initialStory, files, resolveMedia, onChange, toolbar, brand, dark = false, strings: stringOverrides, playerStrings,
-  parseDateText = suggestEdtf,
+  initialStory, initialFiles, onChange, prepareImage: prepare = prepareImage, toolbar, brand, dark = false,
+  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf,
 }: StoryEditorProps) {
   const strings = useMemo(() => ({ ...EDITOR_ENGLISH, ...stringOverrides }), [stringOverrides]);
   const [history, setHistory] = useState<History>(() => startHistory(initialStory));
@@ -87,12 +101,39 @@ export function StoryEditor({
   const [problemsOpen, setProblemsOpen] = useState(false);
   const wide = useMediaQuery("(min-width: 1000px)", true);
   const doc = history.present;
+  const [files, setFiles] = useState(() => new Map(initialFiles ?? []));
+  const [busy, setBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  // The latest of each, for work that finishes after a render (photos).
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const filesRef = useRef(files);
+  filesRef.current = files;
+
+  // A blob: URL per stored file, made once and released with the editor.
+  const urls = useRef(new Map<string, string>());
+  useEffect(() => () => {
+    for (const url of urls.current.values()) URL.revokeObjectURL(url);
+  }, []);
+  const resolveMedia = useCallback<Resolve>(async (_key, item) => {
+    const cached = urls.current.get(item.src);
+    if (cached) return cached;
+    const data = filesRef.current.get(item.src);
+    if (!data) return null;
+    const url = URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: item.mime }));
+    urls.current.set(item.src, url);
+    return url;
+  }, []);
+  const urlFor = useCallback((key: string) => {
+    const item = Object.prototype.hasOwnProperty.call(docRef.current.media, key) ? docRef.current.media[key] : undefined;
+    return item ? resolveMedia(key, item) : Promise.resolve(null);
+  }, [resolveMedia]);
 
   // Every change goes through here (and so into history and to the host).
   const apply = useCallback((next: StoryDoc, key?: string) => {
     setHistory((h) => record(h, next, key));
   }, []);
-  useEffect(() => { onChange?.(doc); }, [doc, onChange]);
+  useEffect(() => { onChange?.(doc, files); }, [doc, files, onChange]);
 
   const index = selected === STORY ? STORY : Math.min(selected, doc.slides.length - 1);
   const slide = index === STORY ? undefined : doc.slides[index];
@@ -101,6 +142,61 @@ export function StoryEditor({
   };
 
   const issues = useMemo(() => validate(doc, files).errors, [doc, files]);
+
+  /** Prepares image files and puts them on a slide: added at the end, or
+   * in place of photo `replace` (keeping its caption and credit). */
+  const addPhotos = useCallback(async (chosen: File[], slideId: string, replace?: number) => {
+    setBusy(true);
+    setPhotoError(null);
+    // A file already in the story (chosen again) is used as it is;
+    // anything else is prepared first.
+    const chosenImages: (NewImage | string)[] = [];
+    for (const file of chosen) {
+      try {
+        const known = findMedia(docRef.current, filesRef.current, new Uint8Array(await file.arrayBuffer()));
+        chosenImages.push(known ?? await prepare(file));
+      } catch {
+        setPhotoError(strings.photoFailed(file.name || "the image"));
+      }
+    }
+    setBusy(false);
+    if (!chosenImages.length) return;
+    let next = docRef.current;
+    let nextFiles = filesRef.current;
+    const keys: string[] = [];
+    for (const image of chosenImages) {
+      if (typeof image === "string") {
+        keys.push(image);
+        continue;
+      }
+      const added = addImage(next, nextFiles, image);
+      next = added.doc;
+      nextFiles = added.files;
+      keys.push(added.key);
+    }
+    const at = next.slides.findIndex((s) => s.id === slideId);
+    if (at < 0) return;
+    const photos: SlideMedia[] = [...(next.slides[at].media ?? [])];
+    if (replace !== undefined && photos[replace]) photos[replace] = { ...photos[replace], ref: keys[0] };
+    else photos.push(...keys.map((ref) => ({ ref })));
+    setFiles(nextFiles);
+    apply(setSlidePhotos(next, at, photos));
+  }, [apply, prepare, strings]);
+
+  // Pasting an image (outside a text field) adds it to the slide.
+  const slideId = slide?.id;
+  useEffect(() => {
+    if (!slideId) return;
+    const onPaste = (e: ClipboardEvent) => {
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, [contenteditable=true]")) return;
+      const images = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+      if (!images.length) return;
+      e.preventDefault();
+      void addPhotos(images, slideId);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [slideId, addPhotos]);
 
   // Undo/redo from the keyboard, except where a text field has its own.
   useEffect(() => {
@@ -192,19 +288,13 @@ export function StoryEditor({
           </Text>
         </Stack>
       )}
-      {slide.media && slide.media.length > 0 && (
-        <Stack gap={4}>
-          <Text size="sm" fw={500}>{strings.photos}</Text>
-          <Group gap="sm">
-            {slide.media.map((m, i) => (
-              <Group key={i} gap="xs" wrap="nowrap">
-                <Thumb doc={doc} slide={{ id: "", media: [m] }} resolveMedia={resolveMedia} />
-                <Text size="xs" c="dimmed" maw={200} lineClamp={2}>{m.caption ?? ""}</Text>
-              </Group>
-            ))}
-          </Group>
-        </Stack>
-      )}
+      <PhotosField
+        photos={slide.media ?? []} media={doc.media} urlFor={urlFor} strings={strings} busy={busy}
+        onChange={(photos, key) => apply(setSlidePhotos(doc, index, photos), `${slide.id}:${key}`)}
+        onFiles={(chosen, replace) => void addPhotos(chosen, slide.id, replace)}
+        onDescription={(key, alt) => apply(updateMedia(doc, key, { alt: alt || undefined }), `media:${key}:alt`)}
+      />
+      {photoError && <Text size="xs" c="red" role="alert">{photoError}</Text>}
     </Stack>
   );
 

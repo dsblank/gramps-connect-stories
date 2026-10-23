@@ -33,6 +33,18 @@ export interface EditorStrings {
   noPreciseDate: string;
   place: string;
   photos: string;
+  photosHint: string;
+  addPhoto: string;
+  replacePhoto: string;
+  movePhotoUp: string;
+  movePhotoDown: string;
+  removePhoto: string;
+  caption: string;
+  credit: string;
+  creditHint: string;
+  description: string;
+  descriptionHint: string;
+  photoFailed: (name: string) => string;
   undo: string;
   redo: string;
   present: string;
@@ -73,6 +85,18 @@ export const EDITOR_ENGLISH: EditorStrings = {
   noPreciseDate: "None: this slide stays off the timeline.",
   place: "Place",
   photos: "Photos",
+  photosHint: "Add, drop or paste a photo. It's resized for the screen, and hidden details like camera and location are left out.",
+  addPhoto: "Add photo",
+  replacePhoto: "Replace",
+  movePhotoUp: "Move photo up",
+  movePhotoDown: "Move photo down",
+  removePhoto: "Remove",
+  caption: "Caption",
+  credit: "Credit",
+  creditHint: "Who took it, or where it's from",
+  description: "Description",
+  descriptionHint: "What the photo shows, for anyone who can't see it.",
+  photoFailed: (name) => `Couldn't use ${name}: this browser can't read it as an image.`,
   undo: "Undo",
   redo: "Redo",
   present: "Present",

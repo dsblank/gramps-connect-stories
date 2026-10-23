@@ -7,7 +7,9 @@
 // saved file back. Then the viewer's Edit button and the editor's Close.
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { deflateSync } from "node:zlib";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
@@ -29,6 +31,43 @@ doc.slides[1]["x-note"] = "kept";
 doc.extensions = { "org.example": { reviewed: "2026-10-01" } };
 const files = new Map(Object.values(doc.media).map((m) => [m.src, new Uint8Array(readFileSync(join(exampleDir, m.src)))]));
 const fixture = await writeStoryZip(doc, files);
+
+/** A plain PNG of one colour: a photo no story has yet. */
+function solidPng(width, height, [r, g, b]) {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const byte of buf) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc(body), body.length + 4);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header.set([8, 2, 0, 0, 0], 8); // 8-bit RGB
+  const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: width }, () => [r, g, b]).flat())]);
+  const pixels = Buffer.concat(Array.from({ length: height }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", header), chunk("IDAT", deflateSync(pixels)), chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+const photoDir = mkdtempSync(join(tmpdir(), "story-editor-photos-"));
+const harbour = join(photoDir, "harbour.png");
+const ship = join(photoDir, "ship.png");
+writeFileSync(harbour, solidPng(120, 80, [40, 90, 160]));
+writeFileSync(ship, solidPng(60, 90, [160, 90, 40]));
 
 const server = createServer((req, res) => {
   const { pathname } = new URL(req.url, "http://x");
@@ -97,6 +136,44 @@ try {
   await page.getByRole("button", { name: "Undo" }).click();
   assert.equal((await slides()).length, 4);
 
+  // Photos: two added to the emigration slide (prepared in the browser),
+  // the first again (stored once, so the same media), then taken off.
+  await page.getByRole("option", { name: /Emigration/ }).click();
+  const photoInput = page.locator('input[type=file][accept="image/*"]');
+  await photoInput.setInputFiles(harbour);
+  await page.getByRole("textbox", { name: "Caption" }).first().waitFor();
+  await page.getByRole("textbox", { name: "Caption" }).first().fill("The harbour");
+  await page.getByRole("textbox", { name: "Description" }).first().fill("Le Havre harbour");
+  await photoInput.setInputFiles(ship);
+  await photoInput.setInputFiles(harbour);
+  await page.getByRole("textbox", { name: "Caption" }).nth(2).waitFor();
+  await page.getByRole("button", { name: "Remove" }).nth(2).click();
+  assert.equal(await page.getByRole("textbox", { name: "Caption" }).count(), 2);
+  // The slide list shows the first photo; the preview offers both.
+  await page.getByRole("option", { name: /Emigration/ }).locator("img").waitFor();
+  // (In German: the story's language is German by now.)
+  await page.getByRole("button", { name: "Foto 2 von 2" }).click();
+  // Pasting an image (outside a text field) adds it too; undo takes it off.
+  const pngBase64 = readFileSync(harbour).toString("base64");
+  await page.evaluate((b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const data = new DataTransfer();
+    data.items.add(new File([bytes], "pasted.png", { type: "image/png" }));
+    document.body.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true }));
+  }, pngBase64);
+  await page.getByRole("textbox", { name: "Caption" }).nth(2).waitFor();
+  await page.getByRole("button", { name: "Undo" }).click();
+  assert.equal(await page.getByRole("textbox", { name: "Caption" }).count(), 2);
+
+  // The story's own portrait file, chosen again: the same media, not a copy.
+  await photoInput.setInputFiles(join(exampleDir, "media", "portrait.webp"));
+  await page.getByRole("textbox", { name: "Caption" }).nth(2).waitFor();
+
+  // The baptism's photo comes off: its file isn't saved.
+  await page.getByRole("option", { name: /Baptism/ }).click();
+  await page.getByRole("button", { name: "Remove" }).click();
+  assert.equal(await page.getByRole("textbox", { name: "Caption" }).count(), 0);
+
   // An empty story title is a problem, and Save waits for it.
   await page.getByText("Title, language and map").click();
   await page.getByRole("textbox", { name: "Title" }).fill("");
@@ -128,7 +205,16 @@ try {
   assert.equal(born["x-note"], "kept");
   assert.deepEqual(saved.doc["x-future"], { kept: true });
   assert.deepEqual(saved.doc.extensions, { "org.example": { reviewed: "2026-10-01" } });
-  assert.deepEqual(Object.keys(saved.doc.media).sort(), Object.keys(doc.media).sort());
+  // Photos: the new ones prepared as WebP, the unused church left out.
+  const emigration = saved.doc.slides[3];
+  assert.deepEqual(emigration.media, [{ ref: "photo-1", caption: "The harbour" }, { ref: "photo-2" }, { ref: "portrait" }]);
+  assert.deepEqual(Object.keys(saved.doc.media).sort(), ["map-1850", "photo-1", "photo-2", "portrait"]);
+  assert.equal(saved.doc.media["photo-1"].mime, "image/webp");
+  assert.equal(saved.doc.media["photo-1"].alt, "Le Havre harbour");
+  assert.equal(saved.doc.media["photo-1"].width, 120);
+  assert.ok(saved.files.has("media/photo-1.webp") && saved.files.has("media/photo-2.webp"));
+  assert.ok(!saved.files.has("media/church.webp"));
+  assert.equal(saved.doc.slides[1].media, undefined);
   await page.getByText(/Downloaded extra\.story\.zip/).waitFor();
   assert.equal(await page.getByText("Unsaved changes").count(), 0);
 
@@ -156,4 +242,5 @@ try {
 } finally {
   await browser.close();
   server.close();
+  rmSync(photoDir, { recursive: true, force: true });
 }

@@ -114,15 +114,49 @@ function SlidePhoto({ mediaKey, item, caption, credit, resolveMedia, colors }: {
   );
 }
 
-function SlideContent({ slide, story, resolveMedia, colors }: {
+/** A small button showing one of a slide's photos. */
+function PhotoThumb({ mediaKey, item, label, selected, onSelect, resolveMedia, colors }: {
+  mediaKey: string;
+  item: MediaItem;
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  resolveMedia: StoryPlayerProps["resolveMedia"];
+  colors: PlayerColors;
+}) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    resolveMedia(mediaKey, item).then((url) => { if (!cancelled) setSrc(url); }, () => {});
+    return () => { cancelled = true; };
+  }, [mediaKey, item, resolveMedia]);
+  return (
+    <button
+      type="button" aria-label={label} title={label} aria-pressed={selected} onClick={onSelect}
+      style={{
+        width: 44, height: 44, padding: 0, borderRadius: 4, overflow: "hidden", cursor: "pointer",
+        border: `2px solid ${selected ? colors.mark : "transparent"}`, background: colors.border,
+        opacity: selected ? 1 : 0.7,
+      }}
+    >
+      {src && <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+    </button>
+  );
+}
+
+function SlideContent({ slide, story, resolveMedia, colors, strings }: {
   slide: Slide | undefined;
   story: StoryDoc;
   resolveMedia: StoryPlayerProps["resolveMedia"];
   colors: PlayerColors;
+  strings: PlayerStrings;
 }) {
-  // The format allows several photos per slide; the player shows the
-  // first one that exists.
-  const photo = slide?.media?.find((m) => Object.prototype.hasOwnProperty.call(story.media, m.ref));
+  // Every photo whose media exists; with several, thumbnails pick which
+  // one is shown. Keyed by slide in the caller, so each slide starts on
+  // its first photo.
+  const photos = (slide?.media ?? []).filter((m) => Object.prototype.hasOwnProperty.call(story.media, m.ref));
+  const [shown, setShown] = useState(0);
+  const photo = photos[Math.min(shown, photos.length - 1)];
   const eyebrow = [slide?.date?.text, slide?.place?.name].filter(Boolean).join(" · ");
   return (
     <>
@@ -135,6 +169,22 @@ function SlideContent({ slide, story, resolveMedia, colors }: {
           resolveMedia={resolveMedia}
           colors={colors}
         />
+      )}
+      {photos.length > 1 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+          {photos.map((m, i) => (
+            <PhotoThumb
+              key={`${i}:${m.ref}`}
+              mediaKey={m.ref}
+              item={story.media[m.ref]}
+              label={strings.photoOf(i + 1, photos.length)}
+              selected={photo === m}
+              onSelect={() => setShown(i)}
+              resolveMedia={resolveMedia}
+              colors={colors}
+            />
+          ))}
+        </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center", maxWidth: 640, textAlign: "center" }}>
         {eyebrow && <div dir="auto" style={{ fontSize: 14, color: colors.muted }}>{eyebrow}</div>}
@@ -326,7 +376,9 @@ export function StoryPlayer({
     return item ? resolveMedia(key, item) : Promise.resolve(null);
   }, [story, resolveMedia]);
 
-  const content = <SlideContent slide={slide} story={story} resolveMedia={resolveMedia} colors={colors} />;
+  const content = (
+    <SlideContent key={slide?.id ?? index} slide={slide} story={story} resolveMedia={resolveMedia} colors={colors} strings={strings} />
+  );
   const timeline = showTimeline && (
     <TimelineStrip points={datedSlides} currentIndex={index} onSelect={setIndex} colors={colors} />
   );

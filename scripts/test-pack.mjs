@@ -75,7 +75,7 @@ try {
     }
     export const schemaId: string = schema.$id;
     export function edit(doc: StoryDoc) {
-      return <StoryEditor initialStory={doc} resolveMedia={async () => null} parseDateText={suggestEdtf} />;
+      return <StoryEditor initialStory={doc} initialFiles={new Map()} parseDateText={suggestEdtf} />;
     }
   `);
   writeFileSync(join(project, "tsconfig.json"), JSON.stringify({

@@ -15,8 +15,8 @@ writes them and presents them with this package's player.
   Everything happens in the browser: an opened story is never uploaded.
 - **Change a story, or make one:** the Story Editor, at
   **https://dsblank.github.io/gramps-connect-stories/edit.html** (or
-  **Edit** on an open story in the viewer). Titles, dates, text and the
-  order of slides; it saves a new `.story.zip`, back into the opened file
+  **Edit** on an open story in the viewer). Titles, dates, text, photos
+  and the order of slides; it saves a new `.story.zip`, back into the opened file
   in Chrome and Edge. Also entirely in the browser.
 - **Put a story on a web page:** the [`<gramps-connect-story>`](#on-any-web-page-gramps-connect-story)
   element.
@@ -141,11 +141,13 @@ needed only by the player. With TypeScript 6 or later, add `"geojson"` to
 
 ## The editor: `@gramps-connect/story/editor`
 
-A React component that edits a story document: the slides on the left
-(drag to reorder), the selected slide's title, date and text in the
-middle, and the player on the right showing it as it changes, with undo
-and redo and the format's validation as you go. It edits the document;
-opening and saving files is up to you (the Story Editor page uses the File
+A React component that edits a story: the slides on the left (drag to
+reorder), the selected slide's title, date, text and photos in the middle,
+and the player on the right showing it as it changes, with undo and redo
+and the format's validation as you go. Photos are added by picking,
+dropping or pasting, prepared in the browser (`optimizeImage`: resized,
+metadata left behind) and stored once however many slides show them. It
+edits the story; opening and saving files is up to you (the Story Editor page uses the File
 System Access API where there is one, a download where not).
 
 ```tsx
@@ -154,13 +156,13 @@ import { MantineProvider } from "@mantine/core";
 import { StoryEditor, pruneMedia } from "@gramps-connect/story/editor";
 import { writeStoryZip } from "@gramps-connect/story";
 
-let latest = story.doc;
+let latest = { doc: story.doc, files: story.files };
 <MantineProvider>
-  <StoryEditor initialStory={story.doc} files={story.files} resolveMedia={resolveMedia} onChange={(doc) => (latest = doc)} />
+  <StoryEditor initialStory={story.doc} initialFiles={story.files} onChange={(doc, files) => (latest = { doc, files })} />
 </MantineProvider>
 
 // Saving: leave out media nothing uses any more, then zip.
-const saved = pruneMedia(latest, story.files);
+const saved = pruneMedia(latest.doc, latest.files);
 const zip = await writeStoryZip(saved.doc, saved.files);
 ```
 
@@ -175,9 +177,9 @@ they are, so opening and saving a story never loses anything.
 The editor is built with [Mantine](https://mantine.dev) 8 (optional peer
 dependencies `@mantine/core` and `@mantine/hooks`, needed only by the
 editor): wrap it in a `MantineProvider` and load Mantine's stylesheet. The
-pieces it's made of (`SlideList`, `StoryTextField`, `DateField`) and its
-editing functions (`addSlide`, `moveSlide`, `updateSlide`, undo history,
-...) are exported too.
+pieces it's made of (`SlideList`, `StoryTextField`, `DateField`,
+`PhotosField`) and its editing functions (`addSlide`, `moveSlide`,
+`updateSlide`, `addImage`, undo history, ...) are exported too.
 
 ## Writing stories from Python: `python/gramps_connect_story.py`
 

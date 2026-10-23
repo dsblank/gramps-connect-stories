@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { Alert, Button, Group, MantineProvider, Modal, Stack, Text, Title, useComputedColorScheme } from "@mantine/core";
-import { readStoryZip, validate, writeStoryZip, type MediaItem, type StoryDoc } from "../src/index";
+import { readStoryZip, validate, writeStoryZip, type StoryDoc } from "../src/index";
 import { ViewerBrand, ViewerIcon } from "../src/player/index";
 import { blankStory, pruneMedia, StoryEditor, storyFileName } from "../src/editor/index";
 import { clearDraft, loadDraft, saveDraft, type Draft } from "./drafts";
@@ -59,7 +59,8 @@ function Landing({ onOpen, onNew, error }: { onOpen: () => void; onNew: () => vo
         <Title order={1} size={28}>Story Editor</Title>
       </Group>
       <Text c="dimmed">
-        Change a family-history story (<code>.story.zip</code>): its slides' titles, dates and text, and their order.
+        Change a family-history story (<code>.story.zip</code>): its slides' titles, dates, text and photos, and their
+        order.
         Your story stays on your computer: nothing is uploaded.
       </Text>
       <Group>
@@ -78,22 +79,22 @@ function App() {
   // Remounts the editor (fresh undo history) for each newly opened story.
   const [generation, setGeneration] = useState(0);
   const [doc, setDoc] = useState<StoryDoc | null>(null);
+  // The story's files as the editor has them (photos added since opening).
+  const [files, setFiles] = useState<Map<string, Uint8Array> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState<{ action: () => void } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const urls = useRef(new Map<string, string>());
   const draftRef = useRef<Draft | null>(null);
   draftRef.current = draft ?? null;
 
   const show = useCallback((next: Draft) => {
-    for (const url of urls.current.values()) URL.revokeObjectURL(url);
-    urls.current.clear();
     setError(null);
     setNotice(null);
     setDraft(next);
     setDoc(next.doc);
+    setFiles(next.files);
     setGeneration((g) => g + 1);
     document.title = `${next.doc.title} – Story Editor`;
     void saveDraft(next).then((kept) => {
@@ -127,24 +128,19 @@ function App() {
   }, [show]);
 
   const unsaved = !!draft && !!doc && JSON.stringify(doc) !== draft.savedJson;
-  const valid = useMemo(() => !!draft && !!doc && validate(doc, draft.files).valid, [doc, draft]);
+  const valid = useMemo(() => !!doc && !!files && validate(doc, files).valid, [doc, files]);
 
   // Keep the draft as it's edited (a little after each change).
   useEffect(() => {
     const current = draftRef.current;
-    if (!current || !doc || doc === current.doc) return;
-    const timer = setTimeout(() => void saveDraft({ ...current, doc, updated: Date.now() }), 400);
+    if (!current || !doc || !files || (doc === current.doc && files === current.files)) return;
+    const timer = setTimeout(() => void saveDraft({ ...current, doc, files, updated: Date.now() }), 400);
     return () => clearTimeout(timer);
-  }, [doc]);
+  }, [doc, files]);
 
-  const resolveMedia = useCallback(async (key: string, item: MediaItem) => {
-    const cached = urls.current.get(key);
-    if (cached) return cached;
-    const data = draftRef.current?.files.get(item.src);
-    if (!data) return null;
-    const url = URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: item.mime }));
-    urls.current.set(key, url);
-    return url;
+  const onEdit = useCallback((nextDoc: StoryDoc, nextFiles: Map<string, Uint8Array>) => {
+    setDoc(nextDoc);
+    setFiles(nextFiles);
   }, []);
 
   /** Runs `action` now, or after asking, when there are unsaved changes. */
@@ -166,11 +162,11 @@ function App() {
   };
 
   const save = async (as: boolean) => {
-    if (!draft || !doc) return;
+    if (!draft || !doc || !files) return;
     setSaving(true);
     setNotice(null);
     try {
-      const saved = pruneMedia(doc, draft.files);
+      const saved = pruneMedia(doc, files);
       const bytes = await writeStoryZip(saved.doc, saved.files);
       const name = draft.fileName && !as ? draft.fileName : storyFileName(doc.title);
       let handle = as ? undefined : draft.handle;
@@ -186,7 +182,7 @@ function App() {
       } else {
         download(bytes, name);
       }
-      const next: Draft = { ...draft, doc, fileName, handle, savedJson: JSON.stringify(doc), updated: Date.now() };
+      const next: Draft = { ...draft, doc, files, fileName, handle, savedJson: JSON.stringify(doc), updated: Date.now() };
       setDraft(next);
       // Before saying so: leaving the page right after mustn't leave the
       // draft saying there are unsaved changes.
@@ -239,9 +235,8 @@ function App() {
             <StoryEditor
               key={generation}
               initialStory={draft.doc}
-              files={draft.files}
-              resolveMedia={resolveMedia}
-              onChange={setDoc}
+              initialFiles={draft.files}
+              onChange={onEdit}
               dark={dark}
               brand={<ViewerBrand href="./" target="_self" />}
               toolbar={toolbar}
