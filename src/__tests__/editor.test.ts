@@ -4,9 +4,11 @@ import { validate } from "../validate";
 import type { StoryDoc } from "../types";
 import {
   addImage, addSlide, blankStory, deleteSlide, duplicateSlide, findMedia, moveSlide, nextSlideId, pruneMedia, record, redo, slideDate,
-  setSlidePhotos, startHistory, storyFileName, undo, updateMedia, updateSlide, updateStory,
+  setSlidePhotos, startHistory, storyFileName, undo, updateMedia, updateSlide, updateStory, parseLatLon, formatLatLon, patchPlace,
+  storyPlaceChoices,
 } from "../editor/model";
 import { suggestEdtf } from "../editor/dates";
+import { searchWikidataPlaces, wikidataPoint } from "../editor/placeSearch";
 
 function story(): StoryDoc {
   return {
@@ -163,4 +165,61 @@ test("editor: a slide's photos, and a photo's description", () => {
   assert.equal(doc.media.photo.alt, "A man in a hat");
   assert.equal(doc.media.photo.src, "media/photo.webp");
   assert.equal(updateMedia(doc, "nope", { alt: "x" }), doc);
+});
+
+test("editor: coordinates as typed", () => {
+  assert.deepEqual(parseLatLon("47.3769, 8.5417"), { lat: 47.3769, lon: 8.5417 });
+  assert.deepEqual(parseLatLon(" -33.9 ;151.2 "), { lat: -33.9, lon: 151.2 });
+  assert.deepEqual(parseLatLon("51.5 -0.12"), { lat: 51.5, lon: -0.12 });
+  assert.equal(parseLatLon("91, 0"), null);
+  assert.equal(parseLatLon("0, 181"), null);
+  assert.equal(parseLatLon("47.3"), null);
+  assert.equal(parseLatLon("47.3, 8.5, 1"), null);
+  assert.equal(parseLatLon("north, east"), null);
+  assert.equal(formatLatLon(47.376912345, 8.5), "47.37691, 8.5");
+});
+
+test("editor: a place keeps its shape, overlays and unknown fields", () => {
+  const place = { name: "Zürich", lat: 47.37, lon: 8.54, geometry: { type: "Point", coordinates: [8.54, 47.37] }, overlays: [], "x-note": 1 };
+  const moved = patchPlace(place, { lat: 47.4, lon: 8.5 })!;
+  assert.deepEqual(moved, { ...place, lat: 47.4, lon: 8.5 });
+  assert.equal(patchPlace(place, { name: "Zürich" }), place, "no change, same object");
+  assert.deepEqual(patchPlace({ name: "x" }, { name: undefined }), undefined, "nothing left is no place");
+  assert.deepEqual(patchPlace(undefined, { name: "Bern" }), { name: "Bern" });
+  assert.deepEqual(patchPlace({ name: "Bern", lat: 1, lon: 2 }, { lat: undefined, lon: undefined }), { name: "Bern" });
+});
+
+test("editor: the story's other places, one per name", () => {
+  const doc = story();
+  doc.slides[0].place = { name: "Zürich", lat: 1, lon: 2 };
+  doc.slides[1].place = { name: " Zürich ", lat: 3, lon: 4 };
+  doc.slides[2].place = { name: "Bern", lat: 5, lon: 6 };
+  assert.deepEqual(storyPlaceChoices(doc).map((p) => p.lat), [1, 5]);
+  assert.deepEqual(storyPlaceChoices(doc, 0).map((p) => p.lat), [3, 5]);
+  assert.deepEqual(storyPlaceChoices(doc, 2).map((p) => p.name), ["Zürich"]);
+});
+
+test("editor: place search asks Wikidata in the story's language", async () => {
+  const seen: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    seen.push(url);
+    if (url.includes("wbsearchentities")) {
+      return new Response(JSON.stringify({ search: [{ id: "Q72", label: "Zürich", description: "city in Switzerland" }, { id: "Q9" }] }));
+    }
+    // Q72 redirected to Q999: the answer is keyed by the new id.
+    return new Response(JSON.stringify({ entities: { Q999: { claims: { P625: [{ mainsnak: { datavalue: { value: { latitude: 47.37, longitude: 8.54 } } } }] } } } }));
+  }) as typeof fetch;
+  try {
+    const results = await searchWikidataPlaces("Zürich", "de_CH");
+    assert.deepEqual(results, [{ id: "Q72", label: "Zürich", description: "city in Switzerland" }, { id: "Q9", label: "Q9" }]);
+    const url = new URL(seen[0]);
+    assert.equal(url.searchParams.get("language"), "de-ch");
+    assert.equal(url.searchParams.get("origin"), "*");
+    assert.deepEqual(await wikidataPoint(results[0]), { lat: 47.37, lon: 8.54 });
+    globalThis.fetch = (async () => new Response(JSON.stringify({ entities: { Q9: { claims: {} } } }))) as typeof fetch;
+    assert.equal(await wikidataPoint(results[1]), null);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

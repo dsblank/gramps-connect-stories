@@ -1,8 +1,8 @@
 // Runs the Story Editor page of the built site (site-dist/) in headless
 // Chrome, served under /gramps-connect-stories/ as GitHub Pages serves it:
 // opens a story carrying fields this version doesn't know, edits titles,
-// dates (in two languages) and the slide order, undoes, reloads (the draft
-// survives), saves (as a download: the File System Access pickers are
+// dates (in two languages), photos, places and the slide order, undoes,
+// reloads (the draft survives), saves (as a download: the File System Access pickers are
 // taken away, since a headless browser can't answer them), and reads the
 // saved file back. Then the viewer's Edit button and the editor's Close.
 import assert from "node:assert/strict";
@@ -147,7 +147,7 @@ try {
   await photoInput.setInputFiles(ship);
   await photoInput.setInputFiles(harbour);
   await page.getByRole("textbox", { name: "Caption" }).nth(2).waitFor();
-  await page.getByRole("button", { name: "Remove" }).nth(2).click();
+  await page.getByRole("button", { name: "Remove", exact: true }).nth(2).click();
   assert.equal(await page.getByRole("textbox", { name: "Caption" }).count(), 2);
   // The slide list shows the first photo; the preview offers both.
   await page.getByRole("option", { name: /Emigration/ }).locator("img").waitFor();
@@ -171,8 +171,46 @@ try {
 
   // The baptism's photo comes off: its file isn't saved.
   await page.getByRole("option", { name: /Baptism/ }).click();
-  await page.getByRole("button", { name: "Remove" }).click();
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
   assert.equal(await page.getByRole("textbox", { name: "Caption" }).count(), 0);
+
+  // Places. The baptism's has a shape and no point: typing one keeps the
+  // shape; nonsense is pointed out.
+  const coordinates = page.getByRole("textbox", { name: "Latitude, longitude" });
+  await page.getByText("This place also has a shape, kept as they are.").waitFor();
+  await coordinates.fill("north");
+  await page.getByText(/^Two numbers: latitude/).waitFor();
+  await coordinates.fill("47.37, 8.544");
+  assert.equal(await page.getByText(/^Two numbers: latitude/).count(), 0);
+
+  // The opening slide takes the birth's place, overlays and all.
+  await page.getByRole("option").first().click();
+  await field("Name").fill("Zür");
+  await page.getByRole("option", { name: "Zürich, Switzerland", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "47.3769, 8.5417");
+  await page.getByText("This place also has a map overlay, kept as they are.").waitFor();
+
+  // Emigration: its place removed, then found on Wikidata (answered here,
+  // not by Wikidata), then moved by a click on the map, which undo takes back.
+  await page.route("https://www.wikidata.org/**", (route) => {
+    const url = new URL(route.request().url());
+    const body = url.pathname.endsWith("api.php")
+      ? { search: [{ id: "Q1", label: "Bremerhaven", description: "port city in Germany" }] }
+      : { entities: { Q1: { claims: { P625: [{ mainsnak: { datavalue: { value: { latitude: 53.55, longitude: 8.58 } } } }] } } } };
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
+  });
+  await page.getByRole("option", { name: /Emigration/ }).click();
+  await page.getByRole("button", { name: "Remove place" }).click();
+  assert.equal(await coordinates.inputValue(), "");
+  await field("Name").fill("Bremerhaven");
+  await page.getByRole("button", { name: "Find on Wikidata" }).click();
+  await page.getByRole("listitem").filter({ hasText: "port city in Germany" }).click();
+  await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "53.55, 8.58");
+  await page.waitForTimeout(1600); // past undo's coalescing, so the click is a step of its own
+  await page.getByRole("application", { name: "Map: click to put the pin" }).click({ position: { x: 60, y: 60 } });
+  await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value !== "53.55, 8.58");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "53.55, 8.58");
 
   // An empty story title is a problem, and Save waits for it.
   await page.getByText("Title, language and map").click();
@@ -215,6 +253,12 @@ try {
   assert.ok(saved.files.has("media/photo-1.webp") && saved.files.has("media/photo-2.webp"));
   assert.ok(!saved.files.has("media/church.webp"));
   assert.equal(saved.doc.slides[1].media, undefined);
+  // Places: a point added beside a shape, a place reused, one found.
+  assert.equal(saved.doc.slides[1].place.lat, 47.37);
+  assert.equal(saved.doc.slides[1].place.lon, 8.544);
+  assert.equal(saved.doc.slides[1].place.geometry.type, "Feature");
+  assert.deepEqual(saved.doc.slides[0].place, doc.slides[1].place);
+  assert.deepEqual(emigration.place, { name: "Bremerhaven", lat: 53.55, lon: 8.58 });
   await page.getByText(/Downloaded extra\.story\.zip/).waitFor();
   assert.equal(await page.getByText("Unsaved changes").count(), 0);
 

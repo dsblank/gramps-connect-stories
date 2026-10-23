@@ -14,15 +14,18 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { MediaItem, Slide, SlideMedia, StoryDoc } from "../types";
 import { optimizeImage } from "../image";
 import { validate, type StoryIssue } from "../validate";
+import { storyPlaces } from "../player/geo";
 import { StoryPlayer } from "../player/StoryPlayer";
 import type { PlayerStrings } from "../player/strings";
 import { suggestEdtf, type DateTextParser } from "./dates";
 import { DateField } from "./DateField";
 import {
-  addImage, addSlide, deleteSlide, findMedia, duplicateSlide, moveSlide, record, redo, setSlidePhotos, startHistory, undo, updateMedia,
-  updateSlide, updateStory, type History, type NewImage,
+  addImage, addSlide, deleteSlide, findMedia, duplicateSlide, moveSlide, record, redo, setSlidePhotos, startHistory, storyPlaceChoices,
+  undo, updateMedia, updateSlide, updateStory, type History, type NewImage,
 } from "./model";
 import { PhotosField } from "./PhotosField";
+import { PlaceField, type PlaceUpdate } from "./PlaceField";
+import { WIKIDATA_PLACE_SEARCH, type PlaceSearch } from "./placeSearch";
 import { SlideList } from "./SlideList";
 import { StoryTextField } from "./StoryTextField";
 import { EDITOR_ENGLISH, type EditorStrings } from "./strings";
@@ -54,6 +57,9 @@ export interface StoryEditorProps {
   playerStrings?: Partial<PlayerStrings>;
   /** Date text -> EDTF. By default gramps-date, in the story's language. */
   parseDateText?: DateTextParser;
+  /** Finding a place by name. By default Wikidata, and only when the
+   * person asks; null leaves the search out. */
+  placeSearch?: PlaceSearch | null;
 }
 
 /** The slide an issue's JSON Pointer is about, or STORY. */
@@ -92,7 +98,7 @@ function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; reso
 
 export function StoryEditor({
   initialStory, initialFiles, onChange, prepareImage: prepare = prepareImage, toolbar, brand, dark = false,
-  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf,
+  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf, placeSearch = WIKIDATA_PLACE_SEARCH,
 }: StoryEditorProps) {
   const strings = useMemo(() => ({ ...EDITOR_ENGLISH, ...stringOverrides }), [stringOverrides]);
   const [history, setHistory] = useState<History>(() => startHistory(initialStory));
@@ -140,6 +146,20 @@ export function StoryEditor({
   const setSlide = (patch: Partial<Slide>, key: string) => {
     if (index !== STORY) apply(updateSlide(history.present, index, patch), `${slide!.id}:${key}`);
   };
+
+  // A place change applies to the slide as it is by then: a name typed and
+  // a place picked in the same moment both land.
+  const setPlace = (slideId: string, update: PlaceUpdate, key: string) => {
+    setHistory((h) => {
+      const at = h.present.slides.findIndex((s) => s.id === slideId);
+      if (at < 0) return h;
+      const before = h.present.slides[at].place;
+      const after = update(before);
+      return after === before ? h : record(h, updateSlide(h.present, at, { place: after }), `${slideId}:${key}`);
+    });
+  };
+  const placeChoices = useMemo(() => storyPlaceChoices(doc, index), [doc, index]);
+  const around = useMemo(() => storyPlaces(doc.slides.map((s) => s.place))?.bounds ?? null, [doc.slides]);
 
   const issues = useMemo(() => validate(doc, files).errors, [doc, files]);
 
@@ -277,17 +297,10 @@ export function StoryEditor({
         label={strings.text} value={slide.text ?? ""} boldLabel={strings.bold} italicLabel={strings.italic} minRows={5}
         onChange={(text) => setSlide({ text: text || undefined }, "text")}
       />
-      {slide.place && (
-        <Stack gap={2}>
-          <Text size="sm" fw={500}>{strings.place}</Text>
-          <Text size="sm">
-            {slide.place.name ?? ""}
-            {slide.place.lat !== undefined && slide.place.lon !== undefined && (
-              <Text span c="dimmed" size="sm"> {slide.place.lat.toFixed(4)}, {slide.place.lon.toFixed(4)}</Text>
-            )}
-          </Text>
-        </Stack>
-      )}
+      <PlaceField
+        place={slide.place} choices={placeChoices} around={around} language={doc.language} search={placeSearch} dark={dark} strings={strings}
+        onChange={(update, key) => setPlace(slide.id, update, key)}
+      />
       <PhotosField
         photos={slide.media ?? []} media={doc.media} urlFor={urlFor} strings={strings} busy={busy}
         onChange={(photos, key) => apply(setSlidePhotos(doc, index, photos), `${slide.id}:${key}`)}

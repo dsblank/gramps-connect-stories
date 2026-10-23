@@ -32,6 +32,21 @@ export interface EditorStrings {
   matchDateAsWritten: string;
   noPreciseDate: string;
   place: string;
+  placeName: string;
+  removePlace: string;
+  findPlace: string;
+  findPlaceHint: string;
+  findPlaceNone: string;
+  findPlaceFailed: string;
+  findPlaceNoPoint: (name: string) => string;
+  coordinates: string;
+  coordinatesHint: string;
+  coordinatesInvalid: string;
+  placeMap: string;
+  placeMapHint: string;
+  placeShape: string;
+  placeOverlays: (count: number) => string;
+  placeKeeps: (what: string) => string;
   photos: string;
   photosHint: string;
   addPhoto: string;
@@ -84,6 +99,21 @@ export const EDITOR_ENGLISH: EditorStrings = {
   matchDateAsWritten: "Work it out from the date",
   noPreciseDate: "None: this slide stays off the timeline.",
   place: "Place",
+  placeName: "Name",
+  removePlace: "Remove place",
+  findPlace: "Find on Wikidata",
+  findPlaceHint: "Looks the name up on Wikidata, to put the pin there. The name is all that's sent, and only when you ask.",
+  findPlaceNone: "Wikidata has no place by that name.",
+  findPlaceFailed: "Couldn't reach Wikidata.",
+  findPlaceNoPoint: (name) => `Wikidata has no map position for ${name}.`,
+  coordinates: "Latitude, longitude",
+  coordinatesHint: "e.g. 47.3769, 8.5417",
+  coordinatesInvalid: "Two numbers: latitude (-90 to 90), then longitude (-180 to 180).",
+  placeMap: "Map: click to put the pin",
+  placeMapHint: "Click the map to put the pin there, or drag the pin.",
+  placeShape: "a shape",
+  placeOverlays: (count) => (count === 1 ? "a map overlay" : `${count} map overlays`),
+  placeKeeps: (what) => `This place also has ${what}, kept as they are.`,
   photos: "Photos",
   photosHint: "Add, drop or paste a photo. It's resized for the screen, and hidden details like camera and location are left out.",
   addPhoto: "Add photo",

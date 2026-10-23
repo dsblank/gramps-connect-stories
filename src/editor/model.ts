@@ -4,7 +4,7 @@
 // know (a newer minor version's, an extension's) ride along untouched:
 // opening and saving a story must never lose anything.
 import { FORMAT_ID, FORMAT_VERSION } from "../version";
-import type { MediaItem, Slide, SlideMedia, StoryDate, StoryDoc } from "../types";
+import type { MediaItem, Place, Slide, SlideMedia, StoryDate, StoryDoc } from "../types";
 
 /** A story with one empty slide: the smallest valid one. */
 export function blankStory(title: string, language?: string): StoryDoc {
@@ -98,6 +98,43 @@ export function slideDate(previous: StoryDate | undefined, text: string, edtf: s
   const next = patched(previous ?? { text }, { text, edtf: edtf || undefined });
   if (next.edtf !== previous?.edtf) delete next.sortYear;
   return next;
+}
+
+/** A place with some fields set or (undefined) removed; one left with
+ * nothing in it is no place at all. Its shape and overlays, and any field
+ * this version doesn't know, stay as they were. */
+export function patchPlace(place: Place | undefined, patch: Partial<Place>): Place | undefined {
+  if (place && Object.entries(patch).every(([key, value]) => place[key as keyof Place] === value)) return place;
+  const next = patched(place ?? {}, patch);
+  return Object.keys(next).length ? next : undefined;
+}
+
+/** Degrees to 5 decimals: about a metre, and no float noise. */
+export const roundDegrees = (value: number) => Math.round(value * 1e5) / 1e5;
+
+/** "47.3769, 8.5417" (or with a space or semicolon between) -> a point;
+ * null when that's not two numbers in range. */
+export function parseLatLon(text: string): { lat: number; lon: number } | null {
+  const parts = text.trim().split(/\s*[,;\s]\s*/);
+  if (parts.length !== 2 || parts.some((p) => !/^[-+]?(\d+\.?\d*|\.\d+)$/.test(p))) return null;
+  const [lat, lon] = parts.map(Number);
+  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return { lat, lon };
+}
+
+export function formatLatLon(lat: number, lon: number): string {
+  return `${roundDegrees(lat)}, ${roundDegrees(lon)}`;
+}
+
+/** The places of the story's other slides, one per name (the first slide
+ * to use it), for giving another slide the very same place. */
+export function storyPlaceChoices(doc: StoryDoc, exceptIndex?: number): Place[] {
+  const byName = new Map<string, Place>();
+  doc.slides.forEach((slide, i) => {
+    const name = slide.place?.name?.trim();
+    if (i !== exceptIndex && name && !byName.has(name)) byName.set(name, slide.place!);
+  });
+  return [...byName.values()];
 }
 
 /** A prepared image to add to a story (see optimizeImage). */
