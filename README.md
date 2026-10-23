@@ -210,3 +210,7 @@ version stays readable through an upgrader in `src/version.ts`. See
 ## License
 
 AGPL-3.0-or-later, the same as Gramps Connect. See [LICENSE](LICENSE).
+
+The exception is the Python writer, `python/gramps_connect_story.py`:
+GPL-2.0-or-later, the same as Gramps desktop, so Gramps addons can include
+it.
