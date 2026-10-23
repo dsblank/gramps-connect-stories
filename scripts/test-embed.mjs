@@ -42,7 +42,7 @@ const cdnBase = `http://127.0.0.1:${cdn.address().port}`;
 // The blog: a different origin (another port) from the CDN.
 const page = `<!doctype html><html><body style="margin:0">
 <h1>My family blog</h1>
-<gramps-connect-story id="a" src="${cdnBase}/full.story.zip" style="height:600px;width:1100px"></gramps-connect-story>
+<gramps-connect-story id="a" src="${cdnBase}/full.story.zip" brand style="height:600px;width:1100px"></gramps-connect-story>
 <gramps-connect-story id="b" src="${cdnBase}/no-map.story.zip" slide="s2" theme="dark" style="height:400px;width:800px"></gramps-connect-story>
 <gramps-connect-story id="c" src="${cdnBase}/missing.story.zip"></gramps-connect-story>
 <script type="module" src="${cdnBase}/embed.js"></script>
@@ -74,9 +74,15 @@ try {
   // The page's own styles don't reach in, and the player's don't leak out.
   assert.equal(await tab.locator("h1").evaluate((el) => getComputedStyle(el).fontFamily.includes("system-ui")), false);
 
+  // `brand`: the viewer's icon, linking to it, only where asked for.
+  const brand = a.getByRole("link", { name: "Gramps Connect Story Viewer" });
+  assert.equal(await brand.getAttribute("href"), "https://dsblank.github.io/gramps-connect-stories/");
+  assert.equal(await brand.getAttribute("target"), "_blank");
+
   // `slide` and `theme` attributes.
   await b.getByText("Marriage").waitFor();
   assert.match(await shown(b), /3 \/ 4/);
+  assert.equal(await b.getByRole("link", { name: "Gramps Connect Story Viewer" }).count(), 0);
   const bg = await b.locator("[lang]").first().evaluate((el) => getComputedStyle(el).backgroundColor);
   assert.equal(bg, "rgb(36, 36, 36)");
 

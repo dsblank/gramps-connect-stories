@@ -42,6 +42,8 @@ export interface StoryPlayerProps {
   /** Replaces the built-in map-mode control, e.g. with one from the host's
    * own UI kit. */
   renderMapModeControl?: (props: MapModeControlProps) => ReactNode;
+  /** Shown before the title, e.g. ViewerBrand on a standalone page. */
+  brand?: ReactNode;
   initialSlide?: number;
 }
 
@@ -199,7 +201,7 @@ function NavArrows({ index, total, onPrev, onNext, variant, strings, colors }: {
 
 export function StoryPlayer({
   story, resolveMedia, dark = false, colors: colorOverrides, strings: stringOverrides, onClose,
-  keyboard = true, onSlideChange, renderMapModeControl, initialSlide = 0,
+  keyboard = true, onSlideChange, renderMapModeControl, brand, initialSlide = 0,
 }: StoryPlayerProps) {
   const colors = useMemo(() => ({ ...defaultColors(dark), ...colorOverrides }), [dark, colorOverrides]);
   const strings = useMemo(
@@ -341,9 +343,10 @@ export function StoryPlayer({
         dir="auto"
         style={{
           position: "absolute", top: 0, left: 20, height: BAR_HEIGHT, maxWidth: "26%", zIndex: 3,
-          display: "flex", alignItems: "center", fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 10, fontWeight: 600,
         }}
       >
+        {brand && <span style={{ flex: "none", display: "flex" }}>{brand}</span>}
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{story.title}</span>
       </div>
       {/* Centered on the whole bar, as a toolbar for the presentation; the

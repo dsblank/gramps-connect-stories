@@ -50,6 +50,10 @@ try {
   assert.match(page.url(), /\?src=examples\/full\.story\.zip$/);
   assert.equal(await page.title(), "The Story of Josef Meyer");
   await page.locator(".maplibregl-marker").waitFor({ timeout: 30_000 });
+  // The viewer's icon, back to its own home page.
+  const brand = page.getByRole("link", { name: "Gramps Connect Story Viewer" });
+  assert.equal(await brand.getAttribute("href"), new URL(base).pathname);
+  assert.equal(await brand.getAttribute("target"), "_self");
 
   // The slide is in the URL, and a reload comes back to it.
   await page.keyboard.press("ArrowRight");

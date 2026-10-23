@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type DragEvent } from "react"
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
-import { StoryPlayer } from "../src/player/index";
+import { StoryPlayer, ViewerBrand, ViewerIcon } from "../src/player/index";
 
 maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).href);
 
@@ -133,6 +133,7 @@ function App() {
           initialSlide={initialSlide}
           onSlideChange={onSlideChange}
           onClose={close}
+          brand={<ViewerBrand href={location.pathname} target="_self" />}
         />
       </div>
     );
@@ -157,7 +158,7 @@ function App() {
       onDrop={onDrop}
     >
       <div className="column">
-        <h1>Gramps Connect Story Viewer</h1>
+        <h1><ViewerIcon size={36} />Gramps Connect Story Viewer</h1>
         <p className="lead">
           Opens a family-history story saved as a <code>.story.zip</code>: slides with text, dates, photos, and
           places on a map.

@@ -1,4 +1,5 @@
 export { StoryPlayer, type StoryPlayerProps } from "./StoryPlayer";
+export { VIEWER_NAME, VIEWER_URL, ViewerBrand, ViewerIcon, type ViewerBrandProps } from "./brand";
 export { MapModeControl, type MapMode, type MapModeControlProps } from "./MapModeControl";
 export { defaultColors, PIN_PATH_D, type PlayerColors } from "./theme";
 export { ENGLISH, PLAYER_LANGUAGES, stringsFor, type PlayerStrings } from "./strings";

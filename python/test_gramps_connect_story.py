@@ -156,6 +156,19 @@ class PillowTest(unittest.TestCase):
             self.assertEqual(result.size, (1200, 1600))
             self.assertEqual(dict(result.getexif()), {})
 
+    def test_overlays_keep_more_detail(self):
+        from PIL import Image
+
+        raw = io.BytesIO()
+        Image.new("RGB", (3000, 1500), (200, 50, 50)).save(raw, "PNG")
+        story = Story("Sizes")
+        photo = story.add_media(raw.getvalue())
+        overlay = story.add_media(raw.getvalue(), max_edge=gcs.OVERLAY_MAX_EDGE)
+        story.add_slide(photo=photo)
+        doc, _ = written(story)
+        self.assertEqual(doc["media"][photo]["width"], 1600)
+        self.assertEqual(doc["media"][overlay]["width"], 2048)
+
     def test_transparency_is_kept(self):
         from PIL import Image
 

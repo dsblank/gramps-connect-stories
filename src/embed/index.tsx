@@ -7,6 +7,8 @@
 //   src    URL of a .story.zip (needs CORS if on another site)
 //   slide  slide to open on: an index, or a slide id like "s3"
 //   theme  "light", "dark", or "auto" (the default: the viewer's setting)
+//   brand  present: the Story Viewer's icon before the title, linking to
+//          it (for a page that is just the story, e.g. one a program wrote)
 //
 // It renders into a shadow root, so the page's CSS and the player's can't
 // collide, and is 480px tall unless the page styles it otherwise.
@@ -16,7 +18,7 @@ import * as maplibregl from "maplibre-gl";
 // Text, not a side effect: it has to go inside the shadow root.
 import maplibreCss from "maplibre-gl/dist/maplibre-gl.css";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../index";
-import { StoryPlayer } from "../player";
+import { StoryPlayer, ViewerBrand } from "../player";
 
 /** maplibre's worker sits next to this script. Same origin: use it as is.
  * Another origin (the usual case, a CDN): a page can't start a worker from
@@ -41,7 +43,7 @@ ${maplibreCss}
 `;
 
 class GrampsConnectStoryElement extends HTMLElement {
-  static observedAttributes = ["src", "slide", "theme"];
+  static observedAttributes = ["src", "slide", "theme", "brand"];
 
   private frame: HTMLDivElement | null = null;
   private reactRoot: Root | null = null;
@@ -141,6 +143,7 @@ class GrampsConnectStoryElement extends HTMLElement {
       // One of maybe several on the page: arrow keys only once focused.
       keyboard: "focus",
       initialSlide: this.initialSlide(),
+      brand: this.hasAttribute("brand") ? createElement(ViewerBrand) : undefined,
     }));
   }
 }
