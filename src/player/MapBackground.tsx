@@ -31,6 +31,25 @@ export interface MapSlide {
   place: Place | undefined;
 }
 
+/** Frame the place's shape or overlays (usually a field, a route or an old
+ * map, far tighter than a town-level zoom), else fly to its point. */
+function moveCamera(map: MapLibreMap, place: Place | undefined, duration: number) {
+  const bounds = placeBounds(place);
+  if (bounds) {
+    map.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { maxZoom: 17, duration });
+    return;
+  }
+  const center = placeCenter(place);
+  if (center) map.flyTo({ center, zoom: 9, essential: true, duration });
+}
+
+/** The pin on the place; held where it was, dimmed, for a slide with none. */
+function placeMarker(marker: MapLibreMarker | null, center: [number, number] | null) {
+  if (!marker) return;
+  if (center) marker.setLngLat(center);
+  marker.getElement().style.opacity = center ? "1" : "0.4";
+}
+
 export function MapBackground({ initialCenter, current, dark, colors, panelFraction, ohmYear, resolveMedia }: {
   initialCenter: [number, number];
   current: MapSlide;
@@ -64,6 +83,8 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
   // What the map was built or last swapped with, so a re-render with the
   // same effective style never triggers a reload.
   const appliedStyleKeyRef = useRef(mapStyleKey(dark, ohmYear));
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
   useEffect(() => {
     if (!containerEl) return;
@@ -81,7 +102,13 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
     map.on("style.load", () => setReady(true));
     // Center points in the part of the map the slide panel doesn't cover.
     map.setPadding({ top: 0, bottom: 0, left: 0, right: containerEl.clientWidth * panelFraction });
-    map.jumpTo({ center: initialCenter });
+    // Straight to the opening slide's place, unanimated. The camera effect
+    // below ran for it before this map existed (the container arrives a
+    // render late), so a story opened partway through starts there too.
+    const start = currentRef.current.place;
+    const startCenter = placeCenter(start);
+    map.jumpTo({ center: startCenter ?? initialCenter });
+    if (startCenter) moveCamera(map, start, 0);
     map.on("load", () => {
       const c = colorsRef.current;
       const el = document.createElement("div");
@@ -93,6 +120,7 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
         + `</svg>`;
       // The pin's tip, not its middle, sits on the coordinate.
       markerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" }).setLngLat(initialCenter).addTo(map);
+      placeMarker(markerRef.current, placeCenter(currentRef.current.place));
     });
     return () => {
       markerRef.current?.remove();
@@ -171,29 +199,16 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
     source?.setData((place?.geometry as GeoJSON | undefined) ?? EMPTY);
   }, [ready, current.key, place]);
 
-  // Camera: once per slide. A shape or overlay is framed (it's usually a
-  // field, a route or an old map, far tighter than a town-level zoom);
-  // otherwise fly to the point. Keyed to the slide, not to `ready`, so a
+  // Camera: once per slide (see moveCamera). Keyed to the slide, not to `ready`, so a
   // map-mode switch never yanks the view back from wherever the viewer
   // has since panned.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const center = placeCenter(place);
-    const marker = markerRef.current;
-    if (!center) {
-      // No place: the camera stays put and the marker dims.
-      if (marker) marker.getElement().style.opacity = "0.4";
-      return;
-    }
-    marker?.setLngLat(center);
-    if (marker) marker.getElement().style.opacity = "1";
-    const bounds = placeBounds(place);
-    if (bounds) {
-      map.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { maxZoom: 17, duration: 900 });
-    } else {
-      map.flyTo({ center, zoom: 9, essential: true, duration: 900 });
-    }
+    placeMarker(markerRef.current, center);
+    // No place: the camera stays put.
+    if (center) moveCamera(map, place, 900);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.key]);
 

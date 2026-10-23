@@ -24,6 +24,12 @@ import { mediaBlob, readStoryZip, writeStoryZip } from "./src/index.ts";
 import { StoryPlayer } from "./src/player/index.ts";
 
 maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
+// The player's map, for checking where its camera went.
+const setPadding = maplibregl.Map.prototype.setPadding;
+maplibregl.Map.prototype.setPadding = function (...args) {
+  window.storyMap = this;
+  return setPadding.apply(this, args);
+};
 let reactRoot = null;
 window.mountExample = async (name, props = {}) => {
   const doc = await (await fetch("/examples/" + name + "/story.json")).json();
@@ -143,6 +149,20 @@ try {
   assert.match(await bodyText(), /The Grossmünster · © Example Archive/);
   await page.getByRole("button", { name: "Close" }).click();
   assert.equal(await page.evaluate(() => window.closeCalls), 1);
+
+  // --- opened partway through: the map starts at that slide's place ------
+  // (Le Havre, not the first place in the story, Zürich).
+  await page.evaluate(() => window.mountExample("full", { initialSlide: 3 }));
+  await page.waitForFunction(() => document.getElementById("root").innerText.includes("Le Havre"));
+  await page.waitForFunction(() => window.storyMap && Math.abs(window.storyMap.getCenter().lng - 0.1) < 0.5 && window.storyMap.getZoom() > 8);
+  await page.waitForSelector(".maplibregl-marker", { timeout: 30_000 });
+  const pin = await page.evaluate(() => {
+    const at = document.querySelector(".maplibregl-marker").getBoundingClientRect();
+    const want = window.storyMap.project(window.storyMap.getCenter());
+    return { x: at.left + at.width / 2 - want.x, y: at.bottom - want.y };
+  });
+  assert.ok(Math.abs(pin.x) < 2 && Math.abs(pin.y) < 2, `pin is off the place: ${JSON.stringify(pin)}`);
+  await page.getByRole("button", { name: "Close" }).click();
 
   // --- an unlocated story: card layout, paragraphs ------------------------
   await page.evaluate(() => window.mountExample("no-map"));
