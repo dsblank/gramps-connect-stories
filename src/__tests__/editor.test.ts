@@ -9,6 +9,7 @@ import {
 } from "../editor/model";
 import { suggestEdtf } from "../editor/dates";
 import { searchWikidataPlaces, wikidataPoint } from "../editor/placeSearch";
+import { editorToPlace, placeFeatures, placeToEditor } from "../editor/placeShapes";
 
 function story(): StoryDoc {
   return {
@@ -222,4 +223,47 @@ test("editor: place search asks Wikidata in the story's language", async () => {
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+test("editor: a place's shapes and overlays, to the map editor and back", () => {
+  const corners: [[number, number], [number, number], [number, number], [number, number]] = [[0, 1], [1, 1], [1, 0], [0, 0]];
+  const place = {
+    name: "Zürich", lat: 47.37, lon: 8.54,
+    geometry: { type: "FeatureCollection", "x-source": "survey", features: [
+      { type: "Feature", properties: { name: "Parish" }, geometry: { type: "Point", coordinates: [8.5, 47.3] } },
+    ] },
+    overlays: [{ media: "map-1850", corners, opacity: 0.7, order: 0, date: { text: "1850", edtf: "1850" }, "x-note": 1 }],
+  };
+  const opened = placeToEditor(place);
+  assert.equal(opened.features.length, 1);
+  assert.deepEqual(opened.overlays, [{ image: "map-1850", corners, opacity: 0.7, order: 0 }]);
+
+  // Unchanged: the same place, the collection's own members and the
+  // overlay's date and unknown field included.
+  assert.deepEqual(editorToPlace(place, { features: opened.features, overlays: opened.overlays }, new Map()), place);
+
+  // A new overlay, a new date for the old one, and a shape drawn.
+  const moved: typeof corners = [[1, 2], [2, 2], [2, 1], [1, 1]];
+  const drawn = { type: "Feature" as const, properties: { color: "#ff0000" }, geometry: { type: "LineString" as const, coordinates: [[0, 0], [1, 1]] } };
+  const after = editorToPlace(
+    place,
+    { features: [...opened.features, drawn], overlays: [{ ...opened.overlays[0], opacity: 1 }, { image: "map-2", corners: moved, order: 10.4 }] },
+    new Map([["map-1850", { text: "1850–1860", edtf: "1850/1860" }], ["map-2", undefined]]),
+  )!;
+  assert.equal((after.geometry as unknown as { features: unknown[] }).features.length, 2);
+  assert.equal((after.geometry as Record<string, unknown>)["x-source"], "survey");
+  assert.deepEqual(after.overlays, [
+    { media: "map-1850", corners, order: 0, date: { text: "1850–1860", edtf: "1850/1860" }, "x-note": 1 },
+    { media: "map-2", corners: moved, order: 10 },
+  ]);
+
+  // Everything taken off: the name and point stay, the rest goes.
+  assert.deepEqual(editorToPlace(place, { features: [], overlays: [] }, new Map()), { name: "Zürich", lat: 47.37, lon: 8.54 });
+  // A bare geometry or a Feature is read as a feature.
+  assert.equal(placeFeatures({ geometry: { type: "Point", coordinates: [1, 2] } })[0].geometry.type, "Point");
+  assert.equal(placeFeatures({ geometry: { type: "Feature", properties: {}, geometry: null } }).length, 0);
+  // No place yet: a shape drawn makes one.
+  assert.deepEqual(editorToPlace(undefined, { features: [drawn], overlays: [] }, new Map()), {
+    geometry: { type: "FeatureCollection", features: [drawn] },
+  });
 });

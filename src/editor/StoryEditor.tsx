@@ -25,6 +25,8 @@ import {
 } from "./model";
 import { PhotosField } from "./PhotosField";
 import { PlaceField, type PlaceUpdate } from "./PlaceField";
+import { PlaceMapDialog } from "./PlaceMapDialog";
+import type { MapEditorStrings } from "./mapEditorStrings";
 import { WIKIDATA_PLACE_SEARCH, type PlaceSearch } from "./placeSearch";
 import { SlideList } from "./SlideList";
 import { StoryTextField } from "./StoryTextField";
@@ -60,6 +62,8 @@ export interface StoryEditorProps {
   /** Finding a place by name. By default Wikidata, and only when the
    * person asks; null leaves the search out. */
   placeSearch?: PlaceSearch | null;
+  /** The map editor's words (Edit map), over its English. */
+  mapStrings?: Partial<MapEditorStrings>;
 }
 
 /** The slide an issue's JSON Pointer is about, or STORY. */
@@ -98,7 +102,7 @@ function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; reso
 
 export function StoryEditor({
   initialStory, initialFiles, onChange, prepareImage: prepare = prepareImage, toolbar, brand, dark = false,
-  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf, placeSearch = WIKIDATA_PLACE_SEARCH,
+  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf, placeSearch = WIKIDATA_PLACE_SEARCH, mapStrings,
 }: StoryEditorProps) {
   const strings = useMemo(() => ({ ...EDITOR_ENGLISH, ...stringOverrides }), [stringOverrides]);
   const [history, setHistory] = useState<History>(() => startHistory(initialStory));
@@ -158,6 +162,9 @@ export function StoryEditor({
       return after === before ? h : record(h, updateSlide(h.present, at, { place: after }), `${slideId}:${key}`);
     });
   };
+  // The slide whose map (shapes, old maps) is open full screen.
+  const [mapSlideId, setMapSlideId] = useState<string | null>(null);
+  const mapSlide = mapSlideId ? doc.slides.find((s) => s.id === mapSlideId) : undefined;
   const placeChoices = useMemo(() => storyPlaceChoices(doc, index), [doc, index]);
   const around = useMemo(() => storyPlaces(doc.slides.map((s) => s.place))?.bounds ?? null, [doc.slides]);
 
@@ -300,6 +307,7 @@ export function StoryEditor({
       <PlaceField
         place={slide.place} choices={placeChoices} around={around} language={doc.language} search={placeSearch} dark={dark} strings={strings}
         onChange={(update, key) => setPlace(slide.id, update, key)}
+        onEditMap={() => setMapSlideId(slide.id)}
       />
       <PhotosField
         photos={slide.media ?? []} media={doc.media} urlFor={urlFor} strings={strings} busy={busy}
@@ -423,6 +431,21 @@ export function StoryEditor({
         {column(index === STORY ? storyForm : slideForm, wide ? "min(520px, 36%)" : undefined)}
         {column(preview)}
       </Box>
+      {mapSlide && (
+        <PlaceMapDialog
+          place={mapSlide.place} doc={doc} files={files} dark={dark} parseDateText={parseDateText}
+          strings={strings} mapStrings={mapStrings}
+          onCancel={() => setMapSlideId(null)}
+          onDone={(place, media, nextFiles) => {
+            const at = doc.slides.findIndex((s) => s.id === mapSlide.id);
+            setMapSlideId(null);
+            if (at < 0) return;
+            setFiles(nextFiles);
+            // One step for undo: the map's images and the place together.
+            apply(updateSlide({ ...doc, media }, at, { place }));
+          }}
+        />
+      )}
       <Modal opened={presenting} onClose={() => setPresenting(false)} fullScreen withCloseButton={false} padding={0}>
         <Box style={{ position: "fixed", inset: 0 }}>
           <StoryPlayer

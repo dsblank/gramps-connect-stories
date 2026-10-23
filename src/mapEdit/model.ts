@@ -116,9 +116,10 @@ function partTimes(feature: Feature, partCount: number): (string[] | undefined)[
 /** Splits a file's features (e.g. parseMapFile's) into
  * editable single parts. A polygon with holes is locked from the start:
  * terra-draw's polygon editing only knows an outer ring. */
-export function prepareForEditing(features: Feature[]): EditSession {
+export function prepareForEditing(features: Feature[], firstIndex = 0): EditSession {
   const session: EditSession = { parts: [], sources: new Map(), locked: new Map() };
-  features.forEach((feature, f) => {
+  features.forEach((feature, i) => {
+    const f = firstIndex + i;
     if (!feature.geometry) return;
     const properties = (feature.properties ?? {}) as Record<string, unknown>;
     const extra = extraProperties(properties);
@@ -145,6 +146,19 @@ export function prepareForEditing(features: Feature[]): EditSession {
     });
   });
   return session;
+}
+
+/** Adds more features (a file imported while editing) after the session's
+ * own, so they save after them too. Returns the session of just the new
+ * ones, whose parts the canvas still has to take. */
+export function addToSession(session: EditSession, features: Feature[]): EditSession {
+  let next = 0;
+  for (const source of session.sources.values()) next = Math.max(next, Number(source.group.slice(1)) + 1);
+  const added = prepareForEditing(features, next);
+  session.parts.push(...added.parts);
+  for (const [key, source] of added.sources) session.sources.set(key, source);
+  for (const [key, part] of added.locked) session.locked.set(key, part);
+  return added;
 }
 
 /** Marks a part terra-draw refused to load (addFeatures' validation): it's

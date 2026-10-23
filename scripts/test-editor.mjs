@@ -68,6 +68,13 @@ const harbour = join(photoDir, "harbour.png");
 const ship = join(photoDir, "ship.png");
 writeFileSync(harbour, solidPng(120, 80, [40, 90, 160]));
 writeFileSync(ship, solidPng(60, 90, [160, 90, 40]));
+const oldMap = join(photoDir, "old-map.png");
+writeFileSync(oldMap, solidPng(100, 80, [200, 180, 140]));
+const procession = join(photoDir, "procession.geojson");
+writeFileSync(procession, JSON.stringify({
+  type: "Feature", properties: { name: "Procession", stroke: "#aa0000" },
+  geometry: { type: "LineString", coordinates: [[8.5440, 47.3700], [8.5410, 47.3715]] },
+}));
 
 const server = createServer((req, res) => {
   const { pathname } = new URL(req.url, "http://x");
@@ -177,7 +184,7 @@ try {
   // Places. The baptism's has a shape and no point: typing one keeps the
   // shape; nonsense is pointed out.
   const coordinates = page.getByRole("textbox", { name: "Latitude, longitude" });
-  await page.getByText("This place also has a shape, kept as they are.").waitFor();
+  await page.getByText("This place also has a shape.").waitFor();
   await coordinates.fill("north");
   await page.getByText(/^Two numbers: latitude/).waitFor();
   await coordinates.fill("47.37, 8.544");
@@ -188,7 +195,7 @@ try {
   await field("Name").fill("Zür");
   await page.getByRole("option", { name: "Zürich, Switzerland", exact: true }).click();
   await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "47.3769, 8.5417");
-  await page.getByText("This place also has a map overlay, kept as they are.").waitFor();
+  await page.getByText("This place also has a map overlay.").waitFor();
 
   // Emigration: its place removed, then found on Wikidata (answered here,
   // not by Wikidata), then moved by a click on the map, which undo takes back.
@@ -211,6 +218,24 @@ try {
   await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value !== "53.55, 8.58");
   await page.getByRole("button", { name: "Undo" }).click();
   await page.waitForFunction(() => document.querySelector("input[placeholder='e.g. 47.3769, 8.5417']")?.value === "53.55, 8.58");
+
+  // The baptism's map: a route imported from a file and an old map's scan
+  // laid over it, with its years. Cancel first leaves everything as it was.
+  await page.getByRole("option", { name: /Baptism/ }).click();
+  await page.getByRole("button", { name: "Edit map" }).click();
+  await page.getByText("Map: Grossmünster, Zürich").waitFor();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByText("Map: Grossmünster, Zürich").waitFor({ state: "detached" });
+  await page.getByRole("button", { name: "Edit map" }).click();
+  await page.getByRole("button", { name: "Polygon" }).waitFor();
+  await page.waitForFunction(() => [...document.querySelectorAll("button")].find((b) => b.textContent === "Polygon" && !b.disabled));
+  await page.locator('input[type=file][accept^=".kml"]').setInputFiles(procession);
+  await page.locator('input[type=file][accept="image/*"]').last().setInputFiles(oldMap);
+  const years = page.getByRole("textbox", { name: "Years it shows" });
+  await years.fill("1850");
+  await page.getByText("EDTF 1850").waitFor();
+  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByText("This place also has a shape, a map overlay.").waitFor();
 
   // An empty story title is a problem, and Save waits for it.
   await page.getByText("Title, language and map").click();
@@ -246,7 +271,7 @@ try {
   // Photos: the new ones prepared as WebP, the unused church left out.
   const emigration = saved.doc.slides[3];
   assert.deepEqual(emigration.media, [{ ref: "photo-1", caption: "The harbour" }, { ref: "photo-2" }, { ref: "portrait" }]);
-  assert.deepEqual(Object.keys(saved.doc.media).sort(), ["map-1850", "photo-1", "photo-2", "portrait"]);
+  assert.deepEqual(Object.keys(saved.doc.media).sort(), ["map-1", "map-1850", "photo-1", "photo-2", "portrait"]);
   assert.equal(saved.doc.media["photo-1"].mime, "image/webp");
   assert.equal(saved.doc.media["photo-1"].alt, "Le Havre harbour");
   assert.equal(saved.doc.media["photo-1"].width, 120);
@@ -256,7 +281,16 @@ try {
   // Places: a point added beside a shape, a place reused, one found.
   assert.equal(saved.doc.slides[1].place.lat, 47.37);
   assert.equal(saved.doc.slides[1].place.lon, 8.544);
-  assert.equal(saved.doc.slides[1].place.geometry.type, "Feature");
+  // The baptism's map: its shape, the imported route, and the scan.
+  const baptismMap = saved.doc.slides[1].place;
+  assert.equal(baptismMap.geometry.type, "FeatureCollection");
+  assert.deepEqual(baptismMap.geometry.features.map((f) => [f.geometry.type, f.properties.name]), [["Polygon", "Grossmünster"], ["LineString", "Procession"]]);
+  assert.equal(baptismMap.overlays.length, 1);
+  assert.deepEqual(Object.keys(baptismMap.overlays[0]).sort(), ["corners", "date", "media", "order"]);
+  assert.deepEqual(baptismMap.overlays[0].date, { text: "1850", edtf: "1850" });
+  assert.equal(baptismMap.overlays[0].corners.length, 4);
+  const scan = saved.doc.media[baptismMap.overlays[0].media];
+  assert.ok(scan && saved.files.has(scan.src), "the scan is saved");
   assert.deepEqual(saved.doc.slides[0].place, doc.slides[1].place);
   assert.deepEqual(emigration.place, { name: "Bremerhaven", lat: 53.55, lon: 8.58 });
   await page.getByText(/Downloaded extra\.story\.zip/).waitFor();

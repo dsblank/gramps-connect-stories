@@ -16,7 +16,7 @@ writes them and presents them with this package's player.
 - **Change a story, or make one:** the Story Editor, at
   **https://dsblank.github.io/gramps-connect-stories/edit.html** (or
   **Edit** on an open story in the viewer). Titles, dates, text, photos,
-  places and the order of slides; it saves a new `.story.zip`, back into
+  places, shapes and old maps on the map, and the order of slides; it saves a new `.story.zip`, back into
   the opened file in Chrome and Edge. Also entirely in the browser, except
   a place search on Wikidata when you ask for one.
 - **Put a story on a web page:** the [`<gramps-connect-story>`](#on-any-web-page-gramps-connect-story)
@@ -180,14 +180,23 @@ coordinates, or pick one of the story's other places to use the very same
 one (its shape and map overlays too). **Find on Wikidata** looks the name
 up and puts the pin there; it's the only thing the editor sends anywhere,
 the name only, and only when clicked. Pass `placeSearch` to use another
-service, or `placeSearch={null}` to leave it out. Shapes and overlays
-aren't edited yet, only kept.
+service, or `placeSearch={null}` to leave it out.
+
+**Edit map** opens the place's map full screen: draw shapes (points,
+lines, areas) or import them from a KML, GPX or GeoJSON file, and lay
+scans of old maps over it (stored at up to 2048px, PNG when they have
+transparency), moving, resizing, rotating or dragging their corners to
+line them up, with the years each one shows. The map editor itself is
+`MapEditor`, which Gramps Connect's own map overlay editor uses too; the
+plain functions behind it (map files, the shape model, overlay geometry)
+are `@gramps-connect/story/map-edit`. The editor also needs `terra-draw`
+and `terra-draw-maplibre-gl-adapter` (optional peer dependencies).
 
 The editor is built with [Mantine](https://mantine.dev) 8 (optional peer
 dependencies `@mantine/core` and `@mantine/hooks`, needed only by the
 editor): wrap it in a `MantineProvider` and load Mantine's stylesheet. The
 pieces it's made of (`SlideList`, `StoryTextField`, `DateField`,
-`PlaceField`, `PhotosField`) and its editing functions (`addSlide`, `moveSlide`,
+`PlaceField`, `PhotosField`, `MapEditor`, `PlaceMapDialog`) and its editing functions (`addSlide`, `moveSlide`,
 `updateSlide`, `addImage`, undo history, ...) are exported too.
 
 ## Writing stories from Python: `python/gramps_connect_story.py`

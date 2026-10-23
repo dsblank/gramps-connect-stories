@@ -2,7 +2,7 @@
 // geometry -- plain functions, no React or map library, shared by the
 // Story Editor and Gramps Connect's own map editor.
 export {
-  assembleForSaving, lockPart, prepareForEditing,
+  addToSession, assembleForSaving, lockPart, prepareForEditing,
   type EditableGeometry, type EditablePart, type EditMode, type EditSession, type SavedPart,
 } from "./model";
 export {

@@ -13,7 +13,7 @@
 //
 // Needs Mantine (like the rest of the editor), maplibre-gl, terra-draw and
 // terra-draw-maplibre-gl-adapter.
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
 import * as maplibregl from "maplibre-gl";
 // maplibre's stylesheet comes with the player, which this entry includes
 // (an import of it here would end up in the published declarations).
@@ -30,8 +30,8 @@ import {
   TextInput,
 } from "@mantine/core";
 import {
-  assembleForSaving, lockPart, mercatorBearing, mercatorDistance, prepareForEditing, rotatePoint, scalePoint,
-  type EditableGeometry, type EditSession, type OverlayCorners, type SavedPart,
+  addToSession, assembleForSaving, lockPart, mercatorBearing, mercatorDistance, prepareForEditing, rotatePoint, scalePoint,
+  type EditableGeometry, type EditablePart, type EditSession, type OverlayCorners, type SavedPart,
 } from "../mapEdit";
 import { mapStyleUrl } from "../player/mapStyles";
 import { defaultColors } from "../player/theme";
@@ -94,6 +94,9 @@ export interface MapEditorHandle {
    * ratio, and selects it. False if that image is already one of the
    * overlays. Throws if it can't be loaded. */
   addImage: (image: string) => Promise<boolean>;
+  /** Adds shapes (an imported map file's, see parseMapFile) after what's
+   * there, and frames them. */
+  addFeatures: (features: Feature[]) => void;
 }
 
 export interface MapEditorProps {
@@ -120,6 +123,10 @@ export interface MapEditorProps {
   labelColors?: { text: string; surface: string };
   /** Room to leave above the tool panel for the host's own bars. */
   toolbarTop?: number;
+  /** Whether an image overlay has a name to edit (default true). */
+  overlayNames?: boolean;
+  /** More fields for the selected image overlay, below its own. */
+  renderOverlayOptions?: (image: string) => ReactNode;
   strings?: Partial<MapEditorStrings>;
 }
 
@@ -304,7 +311,7 @@ function extendBounds(bounds: maplibregl.LngLatBounds, geometry: Geometry): void
 
 export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function MapEditor({
   initial, initialView, resolveImage, releaseImage, onAddImage, onStatus, onError, dark = false, defaultColor, labelColors,
-  toolbarTop = 12, strings: stringOverrides,
+  toolbarTop = 12, overlayNames = true, renderOverlayOptions, strings: stringOverrides,
 }, ref) {
   const strings = { ...MAP_EDITOR_ENGLISH, ...stringOverrides };
   // Callbacks and words the once-per-map listeners below read, kept live.
@@ -1131,32 +1138,9 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
     loaded.current = true;
     const bounds = new maplibregl.LngLatBounds();
     if (initial.features.length > 0) {
-      // Split into single, 2D parts with everything terra-draw won't keep
-      // set aside (map-edit's model), so a multi-part shape, a GPS track or
-      // a property this editor doesn't know survives the save.
       const session = prepareForEditing(initial.features);
       sessionRef.current = session;
-      const parts = [...session.parts];
-      const results = draw.addFeatures(parts.map((part) => ({
-        type: "Feature" as const,
-        geometry: part.geometry,
-        properties: {
-          mode: part.mode, sourceKey: part.sourceKey, color: part.color, name: part.name,
-          ...(part.mode === "polygon" ? { opacity: part.opacity } : {}),
-        },
-      })) as GeoJSONStoreFeatures[]);
-      // terra-draw quietly skips a feature it rejects (a polygon that
-      // crosses itself, say) -- locked instead, so the save keeps it.
-      results.forEach((result, i) => {
-        if (!result.valid) lockPart(session, parts[i].sourceKey);
-      });
-      const locked = [...session.locked.values()];
-      setLockedCount(locked.length);
-      (map.getSource(LOCKED_SOURCE) as maplibregl.GeoJSONSource | undefined)?.setData({
-        type: "FeatureCollection",
-        features: locked.map((part) => ({ type: "Feature", geometry: part.geometry, properties: { color: part.color } })),
-      });
-      for (const part of [...parts, ...locked]) extendBounds(bounds, part.geometry);
+      for (const geometry of showShapes(session, session)) extendBounds(bounds, geometry);
     }
     const drafts = initial.overlays.map((overlay): ImageOverlayDraft => ({ ...overlay, id: crypto.randomUUID() }));
     setOverlays(drafts);
@@ -1169,6 +1153,38 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
     else if (initialView) map.jumpTo(initialView);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, initial]);
+
+  /** Puts a session's parts on the canvas -- `added`, the ones new to it
+   * (all of them on load, an import's after) -- locking any terra-draw
+   * refuses (a polygon that crosses itself, say) so the save keeps it.
+   * Returns every new part's geometry, for framing. */
+  function showShapes(session: EditSession, added: EditSession): Geometry[] {
+    const draw = drawRef.current;
+    const map = mapRef.current;
+    if (!draw || !map) return [];
+    // Split into single, 2D parts with everything terra-draw won't keep
+    // set aside (map-edit's model), so a multi-part shape, a GPS track or
+    // a property this editor doesn't know survives the save.
+    const parts: EditablePart[] = [...added.parts];
+    const results = draw.addFeatures(parts.map((part) => ({
+      type: "Feature" as const,
+      geometry: part.geometry,
+      properties: {
+        mode: part.mode, sourceKey: part.sourceKey, color: part.color, name: part.name,
+        ...(part.mode === "polygon" ? { opacity: part.opacity } : {}),
+      },
+    })) as GeoJSONStoreFeatures[]);
+    results.forEach((result, i) => {
+      if (!result.valid) lockPart(session, parts[i].sourceKey);
+    });
+    const locked = [...session.locked.values()];
+    setLockedCount(locked.length);
+    (map.getSource(LOCKED_SOURCE) as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: "FeatureCollection",
+      features: locked.map((part) => ({ type: "Feature", geometry: part.geometry, properties: { color: part.color } })),
+    });
+    return [...parts, ...added.locked.values()].map((part) => part.geometry);
+  }
 
   function handleModeChange(next: DrawMode) {
     // Guarded, not just disabled on the button below: terra-draw's own
@@ -1276,6 +1292,15 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
       await mountOverlay(draft);
       setSelectedOverlayId(draft.id);
       return true;
+    },
+    addFeatures(features: Feature[]) {
+      const map = mapRef.current;
+      if (!map || features.length === 0) return;
+      const session = sessionRef.current ?? { parts: [], sources: new Map(), locked: new Map() };
+      sessionRef.current = session;
+      const bounds = new maplibregl.LngLatBounds();
+      for (const geometry of showShapes(session, addToSession(session, features))) extendBounds(bounds, geometry);
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, maxZoom: 17 });
     },
     // mountOverlay and friends read only refs: a fresh handle each render
     // is fine.
@@ -1414,13 +1439,15 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
             applies live (see updateSelectedOverlay). */}
         {selectedOverlay && (
           <>
-            <TextInput
-              size="xs"
-              placeholder={strings.overlayName}
-              value={selectedOverlay.name ?? ""}
-              onChange={(e) => updateSelectedOverlay({ name: e.currentTarget.value })}
-              disabled={!ready}
-            />
+            {overlayNames && (
+              <TextInput
+                size="xs"
+                placeholder={strings.overlayName}
+                value={selectedOverlay.name ?? ""}
+                onChange={(e) => updateSelectedOverlay({ name: e.currentTarget.value })}
+                disabled={!ready}
+              />
+            )}
             <Stack gap={2}>
               <Text size="xs" c="dimmed">{strings.opacity}</Text>
               <Slider
@@ -1442,6 +1469,7 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
               onChange={(v) => updateSelectedOverlay({ order: Number(v) || 0 })}
               disabled={!ready}
             />
+            {renderOverlayOptions?.(selectedOverlay.image)}
           </>
         )}
       </Stack>

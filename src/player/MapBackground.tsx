@@ -182,7 +182,9 @@ export function MapBackground({ initialCenter, current, dark, colors, panelFract
     map.addLayer({
       id: FILL_LAYER, type: "fill", source: SHAPE_SOURCE,
       filter: ["==", ["geometry-type"], "Polygon"],
-      paint: { "fill-color": color, "fill-opacity": 0.25 },
+      // And its own `opacity` (what the map editor sets on an area) over
+      // a light default.
+      paint: { "fill-color": color, "fill-opacity": ["coalesce", ["to-number", ["get", "opacity"], 0.25], 0.25] },
     });
     map.addLayer({
       id: LINE_LAYER, type: "line", source: SHAPE_SOURCE,

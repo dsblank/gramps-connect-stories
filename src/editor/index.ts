@@ -5,6 +5,8 @@ export {
 export { MAP_EDITOR_ENGLISH, type MapEditorStrings } from "./mapEditorStrings";
 export { PhotosField, type PhotosFieldProps } from "./PhotosField";
 export { PlaceField, type PlaceFieldProps, type PlaceUpdate } from "./PlaceField";
+export { PlaceMapDialog, type PlaceMapDialogProps } from "./PlaceMapDialog";
+export { editorToPlace, placeFeatures, placeToEditor } from "./placeShapes";
 export { searchWikidataPlaces, wikidataPoint, WIKIDATA_PLACE_SEARCH, type PlaceSearch, type PlaceSearchResult } from "./placeSearch";
 export { StoryTextField, type StoryTextFieldProps } from "./StoryTextField";
 export { SlideList, type SlideListProps } from "./SlideList";

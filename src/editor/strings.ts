@@ -47,6 +47,19 @@ export interface EditorStrings {
   placeShape: string;
   placeOverlays: (count: number) => string;
   placeKeeps: (what: string) => string;
+  editMap: string;
+  editMapHint: string;
+  mapDialogTitle: (placeName: string | undefined) => string;
+  mapHelp: string;
+  importShapes: string;
+  importShapesHint: string;
+  importFailed: (fileName: string) => string;
+  importNothing: (fileName: string) => string;
+  overlayAlready: string;
+  overlayDate: string;
+  overlayDateHint: string;
+  cancel: string;
+  done: string;
   photos: string;
   photosHint: string;
   addPhoto: string;
@@ -113,7 +126,20 @@ export const EDITOR_ENGLISH: EditorStrings = {
   placeMapHint: "Click the map to put the pin there, or drag the pin.",
   placeShape: "a shape",
   placeOverlays: (count) => (count === 1 ? "a map overlay" : `${count} map overlays`),
-  placeKeeps: (what) => `This place also has ${what}, kept as they are.`,
+  placeKeeps: (what) => `This place also has ${what}.`,
+  editMap: "Edit map",
+  editMapHint: "Shapes under the pin (a parish, a route) and scans of old maps laid over it.",
+  mapDialogTitle: (placeName) => (placeName ? `Map: ${placeName}` : "Map"),
+  mapHelp: "How to use this editor",
+  importShapes: "Import shapes",
+  importShapesHint: "Adds the points, lines and areas in a KML, GPX or GeoJSON file to this map.",
+  importFailed: (fileName) => `Couldn't read ${fileName} as a KML, GPX or GeoJSON file.`,
+  importNothing: (fileName) => `${fileName} has no shapes in it.`,
+  overlayAlready: "That image is already on this map.",
+  overlayDate: "Years it shows",
+  overlayDateHint: "e.g. 1850, or 1850 to 1880. With historical maps, it's hidden on slides outside them.",
+  cancel: "Cancel",
+  done: "Done",
   photos: "Photos",
   photosHint: "Add, drop or paste a photo. It's resized for the screen, and hidden details like camera and location are left out.",
   addPhoto: "Add photo",

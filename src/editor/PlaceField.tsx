@@ -2,7 +2,8 @@
 // map, dragging the pin, typing coordinates, or a search by name (opt-in:
 // the one thing the editor sends anywhere). Picking one of the story's
 // other places gives this slide the very same place, overlays and all.
-// A place's shape and overlays aren't edited here, but are always kept.
+// A place's shapes and old maps are edited full screen (onEditMap), and
+// always kept.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Autocomplete, Button, Group, Loader, Stack, Text, TextInput, Tooltip, UnstyledButton } from "@mantine/core";
 import type { Place } from "../types";
@@ -28,6 +29,9 @@ export interface PlaceFieldProps {
   strings: EditorStrings;
   /** A change, as a function of the place as it is by then. */
   onChange: (update: PlaceUpdate, key: string) => void;
+  /** Opens the shapes-and-old-maps editor; without it, those are only
+   * kept. */
+  onEditMap?: () => void;
 }
 
 type Found =
@@ -36,7 +40,7 @@ type Found =
   | { state: "results"; results: PlaceSearchResult[] }
   | { state: "message"; message: string };
 
-export function PlaceField({ place, choices, around, language, search, dark, strings, onChange }: PlaceFieldProps) {
+export function PlaceField({ place, choices, around, language, search, dark, strings, onChange, onEditMap }: PlaceFieldProps) {
   const lat = place?.lat;
   const lon = place?.lon;
   const point = lat !== undefined && lon !== undefined ? ([lon, lat] as [number, number]) : null;
@@ -155,6 +159,12 @@ export function PlaceField({ place, choices, around, language, search, dark, str
       />
       <Text size="xs" c="dimmed">{strings.placeMapHint}</Text>
       {keeps.length > 0 && <Text size="xs" c="dimmed">{strings.placeKeeps(keeps.join(", "))}</Text>}
+      {onEditMap && (
+        <Group gap="sm" wrap="nowrap" align="center">
+          <Button variant="default" size="xs" style={{ flex: "none" }} onClick={onEditMap}>{strings.editMap}</Button>
+          <Text size="xs" c="dimmed">{strings.editMapHint}</Text>
+        </Group>
+      )}
     </Stack>
   );
 }

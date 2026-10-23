@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { Feature } from "geojson";
 import { IMAGE_OVERLAY_PROPERTY, isKmlRegion, mapItemToGeoJson, MEDIA_HANDLE_PREFIX, overlaySourceOfText, parseMapFile } from "../mapEdit/mapFile";
 import { cornersFromBox, kmlBounds, kmlOverlayBounds, mercatorBearing, mercatorDistance, rotatePoint, scalePoint, unionBounds } from "../mapEdit/geometry";
-import { assembleForSaving, lockPart, prepareForEditing, type SavedPart } from "../mapEdit/model";
+import { addToSession, assembleForSaving, lockPart, prepareForEditing, type SavedPart } from "../mapEdit/model";
 
 const feature = (geometry: Feature["geometry"], properties: Record<string, unknown> = {}): Feature =>
   ({ type: "Feature", geometry, properties });
@@ -91,6 +91,20 @@ describe("prepareForEditing / assembleForSaving", () => {
     lockPart(session, session.parts[1].sourceKey);
     const [saved] = assembleForSaving(session, unchanged(session));
     assert.deepEqual(saved.geometry, { type: "MultiPoint", coordinates: [[0, 0], [1, 1]] });
+  });
+
+  it("adds an imported file's shapes after the loaded ones", () => {
+    const session = prepareForEditing([
+      feature({ type: "Point", coordinates: [0, 0] }, { name: "Church" }),
+      feature({ type: "MultiPoint", coordinates: [[1, 1], [2, 2]] }, { name: "Graves" }),
+    ]);
+    const added = addToSession(session, [feature({ type: "LineString", coordinates: [[3, 3], [4, 4]] }, { name: "Road", surveyed: 1850 })]);
+    assert.deepEqual(added.parts.map((p) => p.name), ["Road"]);
+    assert.equal(session.parts.length, 4);
+    const saved = assembleForSaving(session, unchanged(session).reverse());
+    assert.deepEqual(saved.map((f) => f.properties?.name), ["Church", "Graves", "Road"]);
+    assert.equal(saved[2].properties?.surveyed, 1850);
+    assert.equal(saved[1].geometry.type, "MultiPoint");
   });
 
   it("rounds coordinates to terra-draw's 9 decimal places", () => {
