@@ -1,7 +1,7 @@
 // The standalone viewer: open a .story.zip (picked, dropped, or ?src=URL)
 // and present it. Runs entirely in the browser -- an opened file is never
 // uploaded anywhere; the only network traffic is the map's tiles.
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
@@ -210,6 +210,35 @@ function App() {
           places on a map.
         </p>
 
+        <h2>What is a story?</h2>
+        <p>
+          A story turns the records in a family tree into something your relatives will actually sit and look
+          through: a short slideshow of the moments in a life or a family. Births, marriages, moves and deaths
+          each get a slide, with the date, a few sentences, photos, and a pin on a map that travels from place to
+          place as the story goes. A timeline along the bottom shows where each moment falls in the years.
+        </p>
+        <p>
+          The map can be today's, or a historical map of the time, and a slide can carry shapes drawn on it or a
+          scan of an old map laid over it. The whole story is a single file: email it to family, put it on your
+          website, or keep it with your research. It opens in any web browser, with nothing to install and no
+          account, and the format is open and documented, so it stays readable.
+        </p>
+        <figure className="demo">
+          <img src="images/slideshow.gif" width={720} height={428} loading="lazy"
+            alt="A story playing: each slide shows a portrait, its date and place, and a sentence, while the map moves to the place and the timeline marks the year." />
+          <figcaption>A story playing: the map and the timeline follow each moment.</figcaption>
+        </figure>
+
+        <h2>Examples</h2>
+        <ul>
+          {DEMOS.map((demo) => (
+            <li key={demo.file}>
+              <a href={`?src=demos/${demo.file}.story.zip`}>{demo.label}</a> <span className="small">— {demo.about}</span>
+            </li>
+          ))}
+        </ul>
+
+        <h2>Open a story</h2>
         <div className="drop">
           <button className="primary" type="button" onClick={() => fileInput.current?.click()} disabled={loading}>
             {loading ? "Opening…" : "Open a story…"}
@@ -240,15 +269,6 @@ function App() {
           screen.
         </p>
 
-        <h2>Examples</h2>
-        <ul>
-          {DEMOS.map((demo) => (
-            <li key={demo.file}>
-              <a href={`?src=demos/${demo.file}.story.zip`}>{demo.label}</a> <span className="small">— {demo.about}</span>
-            </li>
-          ))}
-        </ul>
-
         <h2>Making a story</h2>
         <p>
           In <a href="https://github.com/dsblank/gramps-connect">Gramps Connect</a>, open a story and choose{" "}
@@ -256,6 +276,11 @@ function App() {
           choose <b>Edit</b>, or start one from scratch in the <a href="edit.html">Story Editor</a>. Other programs
           can write stories too: the format is open and documented.
         </p>
+        <figure className="demo" style={{ "--demo-width": "900px" } as CSSProperties}>
+          <img src="images/editing.gif" width={900} height={534} loading="lazy"
+            alt="The Story Editor: choosing a slide, rewriting its text and title, reordering its photos, and the preview beside the form updating as each change is made." />
+          <figcaption>The Story Editor: change a slide's text, title and photos, and watch the preview follow.</figcaption>
+        </figure>
 
         <h2>For developers</h2>
         <ul>
