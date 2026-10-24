@@ -197,7 +197,7 @@ dependencies `@mantine/core` and `@mantine/hooks`, needed only by the
 editor): wrap it in a `MantineProvider` and load Mantine's stylesheet. The
 pieces it's made of (`SlideList`, `StoryTextField`, `DateField`,
 `PlaceField`, `PhotosField`, `MapEditor`, `PlaceMapDialog`) and its editing functions (`addSlide`, `moveSlide`,
-`updateSlide`, `addImage`, undo history, ...) are exported too.
+`updateSlide`, `addImage`, undo history (`History<T>`, for any document), ...) are exported too.
 
 ## Writing stories from Python: `python/gramps_connect_story.py`
 
