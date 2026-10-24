@@ -40,12 +40,23 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", (err) => pageErrors.push(String(err)));
 
-  // Landing page, then an example by its ?src= link.
+  // Landing page, then the demo by its ?src= link.
   await page.goto(base);
   await page.getByRole("button", { name: "Open a story…" }).waitFor();
   assert.equal(await page.title(), "Gramps Connect Story Viewer");
   await page.getByRole("heading", { name: "Gramps Connect Story Viewer" }).waitFor();
-  await page.getByRole("link", { name: "The Story of Josef Meyer" }).click();
+  await page.getByRole("link", { name: "The Story of Louis XIII" }).click();
+  await page.getByText("25 moments in the life and family of Louis XIII").waitFor();
+  assert.match(page.url(), /\?src=demos\/louis-xiii\.story\.zip$/);
+
+  // The other demo; its photo credits show as written, with no "©" added.
+  await page.goto(base);
+  await page.getByRole("link", { name: "The Story of George VI" }).click();
+  await page.getByText("13 moments in the life and family of George VI").waitFor();
+  await page.getByText("King George VI · Matson Photo Service, Library of Congress · Public domain · Wikimedia Commons").waitFor();
+
+  // An example, which isn't listed but is still served.
+  await page.goto(`${base}?src=examples/full.story.zip`);
   await page.getByText("3 moments from Josef Meyer").waitFor();
   assert.match(page.url(), /\?src=examples\/full\.story\.zip$/);
   assert.equal(await page.title(), "The Story of Josef Meyer");

@@ -5,6 +5,7 @@
 //                                 the editor (site/editor.tsx)
 //   maplibre-gl-worker.mjs, maplibre-gl-shared.mjs
 //   examples/*.story.zip          the example stories, zipped
+//   demos/*.story.zip             the home page's demo stories, as they are
 //   spec/1.0/story.schema.json    at the URL the schema's own $id names
 //
 // Needs `npm run build` first: the example zips are written with the
@@ -65,6 +66,7 @@ for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
   copyFileSync(join(maplibreDist, file), join(out, file));
 }
 cpSync(join(root, "spec"), join(out, "spec"), { recursive: true });
+cpSync(join(root, "site/demos"), join(out, "demos"), { recursive: true });
 
 for (const name of readdirSync(join(root, "examples"))) {
   const dir = join(root, "examples", name);

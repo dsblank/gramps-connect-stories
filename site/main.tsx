@@ -12,10 +12,32 @@ maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).hre
 
 declare const __PACKAGE_VERSION__: string;
 
-const EXAMPLES = [
-  { file: "full", label: "The Story of Josef Meyer", about: "a map with a historical overlay, a shape, captions, and a timeline" },
-  { file: "no-map", label: "The Story of Anna Keller", about: "no places, so plain cards; paragraphs" },
-  { file: "rtl", label: "סיפורה של רבקה כהן", about: "a right-to-left language" },
+// Real stories made in Gramps Connect (site/demos/, served at demos/). The
+// format's own test fixtures (examples/) are still built and served at
+// examples/, just not listed here.
+const DEMOS = [
+  {
+    file: "louis-xiii",
+    label: "The Story of Louis XIII",
+    about: (
+      <>
+        made in Gramps Connect from <code>sample-bourbon/bourbon.ged</code> in{" "}
+        <a href="https://github.com/D-Jeffrey/gedcom-samples/tree/main/sample-bourbon">D-Jeffrey/gedcom-samples</a>
+      </>
+    ),
+  },
+  {
+    file: "george-vi",
+    label: "The Story of George VI",
+    about: (
+      <>
+        made in Gramps Connect from the{" "}
+        <a href="https://github.com/DavidMStraub/gramps-web-example-tree-queen">Gramps Web example tree</a>{" "}
+        (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>); photos from{" "}
+        <a href="https://commons.wikimedia.org/">Wikimedia Commons</a>, credited on each slide
+      </>
+    ),
+  },
 ];
 
 function usePrefersDark(): boolean {
@@ -220,9 +242,9 @@ function App() {
 
         <h2>Examples</h2>
         <ul>
-          {EXAMPLES.map((ex) => (
-            <li key={ex.file}>
-              <a href={`?src=examples/${ex.file}.story.zip`}>{ex.label}</a> <span className="small">— {ex.about}</span>
+          {DEMOS.map((demo) => (
+            <li key={demo.file}>
+              <a href={`?src=demos/${demo.file}.story.zip`}>{demo.label}</a> <span className="small">— {demo.about}</span>
             </li>
           ))}
         </ul>
