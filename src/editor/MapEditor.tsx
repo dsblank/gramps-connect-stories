@@ -54,6 +54,9 @@ const COLOR_SWATCHES = [
   "#2a78d6", "#d64545", "#3aa657", "#e0a325", "#8654c9", "#2aa7a0", "#e0678a", "#555555",
 ];
 
+/** A region's fill with no opacity of its own, as the maps and the story
+ * player draw it; also a new region's starting opacity. */
+const UNSET_OPACITY = 0.25;
 const EMPTY_LABEL_PREVIEW: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** An image overlay as the host gives and gets it: `image` is the host's
@@ -356,9 +359,14 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
   // both a newly-finished region's own opacity and, while one is selected,
   // what changing this edits in place. 0.25 matches Gramps Connect's map
   // view default, so an untouched region renders the same there.
-  const [opacity, setOpacity] = useState(0.25);
+  const [opacity, setOpacity] = useState(UNSET_OPACITY);
   const opacityRef = useRef(opacity);
   opacityRef.current = opacity;
+  // How a loaded shape with no color of its own is drawn: as the maps draw
+  // it (their mark color), not in whatever the toolbar's color is now --
+  // and it's saved still without one.
+  const unsetColorRef = useRef(defaultColor ?? defaultColors(dark).mark);
+  unsetColorRef.current = defaultColor ?? defaultColors(dark).mark;
   // The selected point/region's own `name` (a point's label text, or a
   // region's purely-descriptive name), mirroring `color`'s own pattern --
   // NOT derived from getSnapshot() on every render, since
@@ -483,12 +491,12 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
     // and terra-draw calls a styling function fresh on every render, not
     // just at construction time.
     const readColor = (feature: GeoJSONStoreFeatures): HexColor =>
-      (feature.properties.color as HexColor | undefined) ?? (colorRef.current as HexColor);
+      (feature.properties.color as HexColor | undefined) ?? (unsetColorRef.current as HexColor);
     // Same pattern as readColor, for a region's own `opacity` property --
     // only polygon/rectangle modes take a `fillOpacity` style at all (point/
     // line have nothing to fill).
     const readOpacity = (feature: GeoJSONStoreFeatures): number =>
-      (feature.properties.opacity as number | undefined) ?? opacityRef.current;
+      (feature.properties.opacity as number | undefined) ?? UNSET_OPACITY;
 
     const draw = new TerraDraw({
       adapter: new TerraDrawMapLibreGLAdapter({ map }),
@@ -585,8 +593,9 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
       const feature = id ? draw.getSnapshot().find((f) => String(f.id) === id) : undefined;
       setLabelText((feature?.properties?.name as string | undefined) ?? "");
       if (feature) {
-        setColor((feature.properties?.color as string | undefined) ?? colorRef.current);
-        setOpacity((feature.properties?.opacity as number | undefined) ?? 0.25);
+        // An uncolored shape shows the color it's drawn in.
+        setColor((feature.properties?.color as string | undefined) ?? unsetColorRef.current);
+        setOpacity((feature.properties?.opacity as number | undefined) ?? UNSET_OPACITY);
         // Mirrors the overlay mousedown handler's own deselectFeature call
         // -- an image overlay and a drawn shape are mutually exclusive
         // selections, so a shape becoming selected clears any overlay
@@ -1227,14 +1236,17 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
           const name = (f.properties?.name as string | undefined)?.trim();
           // Opacity only for a region (Polygon) -- meaningless on a point/
           // line, which have nothing to fill (see readOpacity/opacityRef).
+          // Color and opacity only as the shape has them: a drawn shape got
+          // both when finished, and one loaded without them stays that way.
           const regionOpacity = f.geometry.type === "Polygon"
-            ? (f.properties?.opacity as number | undefined) ?? opacityRef.current
+            ? f.properties?.opacity as number | undefined
             : undefined;
+          const color = f.properties?.color as string | undefined;
           const sourceKey = f.properties?.sourceKey;
           return {
             ...(typeof sourceKey === "string" ? { sourceKey } : {}),
             geometry: f.geometry as EditableGeometry,
-            color: (f.properties?.color as string | undefined) ?? colorRef.current,
+            ...(color !== undefined ? { color } : {}),
             ...(name ? { name } : {}),
             ...(regionOpacity !== undefined ? { opacity: regionOpacity } : {}),
           };

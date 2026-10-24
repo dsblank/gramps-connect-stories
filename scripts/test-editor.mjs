@@ -285,6 +285,9 @@ try {
   const baptismMap = saved.doc.slides[1].place;
   assert.equal(baptismMap.geometry.type, "FeatureCollection");
   assert.deepEqual(baptismMap.geometry.features.map((f) => [f.geometry.type, f.properties.name]), [["Polygon", "Grossmünster"], ["LineString", "Procession"]]);
+  // A shape keeps the color it came with (the route's file stroke), and
+  // one without a color or opacity is saved without one.
+  assert.deepEqual(baptismMap.geometry.features.map((f) => [f.properties.color, f.properties.opacity]), [[undefined, undefined], ["#aa0000", undefined]]);
   assert.equal(baptismMap.overlays.length, 1);
   assert.deepEqual(Object.keys(baptismMap.overlays[0]).sort(), ["corners", "date", "media", "order"]);
   assert.deepEqual(baptismMap.overlays[0].date, { text: "1850", edtf: "1850" });
