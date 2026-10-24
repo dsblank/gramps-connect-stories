@@ -304,13 +304,15 @@ try {
   await page.getByRole("link", { name: "Josef's Story" }).waitFor();
   await page.goto(`${base}?src=examples/no-map.story.zip`);
   await page.getByRole("button", { name: "Edit" }).click();
-  await page.waitForURL(/edit\.html$/);
+  // Only that it went there: the line after waits for the editor itself.
+  // Waiting for the page's whole "load" timed out now and then on CI.
+  await page.waitForURL(/edit\.html$/, { waitUntil: "commit" });
   await page.getByText("Title, language and map").waitFor();
   assert.equal(await page.title(), "The Story of Anna Keller – Story Editor");
 
   // Close: back to the viewer, nothing left to continue.
   await page.getByRole("button", { name: "Close" }).click();
-  await page.waitForURL((url) => url.pathname === PREFIX);
+  await page.waitForURL((url) => url.pathname === PREFIX, { waitUntil: "commit" });
   await page.getByRole("link", { name: "make a new story" }).waitFor();
 
   // A new story from there.
