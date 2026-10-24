@@ -161,6 +161,9 @@ try {
   await page.getByRole("button", { name: "Next" }).click();
   await page.waitForFunction(() => document.getElementById("root").innerText.includes("Baptism"));
   assert.match(await bodyText(), /The Grossmünster · © Example Archive/);
+  // A building's outline is framed no closer than the town around it.
+  await page.waitForFunction(() => window.storyMap && !window.storyMap.isMoving()
+    && window.storyMap.getZoom() > 11 && window.storyMap.getZoom() <= 13.01, null, { timeout: 30_000 });
   await page.getByRole("button", { name: "Close" }).click();
   assert.equal(await page.evaluate(() => window.closeCalls), 1);
 
@@ -168,7 +171,7 @@ try {
   // (Le Havre, not the first place in the story, Zürich).
   await page.evaluate(() => window.mountExample("full", { initialSlide: 3 }));
   await page.waitForFunction(() => document.getElementById("root").innerText.includes("Le Havre"));
-  await page.waitForFunction(() => window.storyMap && Math.abs(window.storyMap.getCenter().lng - 0.1) < 0.5 && window.storyMap.getZoom() > 8);
+  await page.waitForFunction(() => window.storyMap && Math.abs(window.storyMap.getCenter().lng - 0.1) < 0.5 && Math.abs(window.storyMap.getZoom() - 6) < 0.5);
   await page.waitForSelector(".maplibregl-marker", { timeout: 30_000 });
   const pin = await page.evaluate(() => {
     const at = document.querySelector(".maplibregl-marker").getBoundingClientRect();

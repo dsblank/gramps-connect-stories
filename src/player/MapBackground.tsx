@@ -27,6 +27,16 @@ const PLACES_LAYER = "story-places-dots";
 // Room around the outermost dots of the opening view, inside the part of
 // the map the slide panel leaves free.
 const OVERVIEW_PADDING = 60;
+// A place with only a point: far enough out to see where it is in its
+// country (Le Havre with Paris and London in view), not just the town.
+const POINT_ZOOM = 6;
+// A shape or old map is framed, but never closer than a town and its
+// surroundings, so readers can still tell where it is.
+const SHAPE_MAX_ZOOM = 13;
+const SHAPE_PADDING = 40;
+// A "shape" with no size (a single point) is shown as a point; anything
+// bigger, even a building, at the town zoom, where it can still be seen.
+const MIN_SHAPE_DEGREES = 1e-5;
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** The current slide, as far as the map cares. `key` is the slide id:
@@ -40,8 +50,8 @@ export interface MapSlide {
 }
 
 /** Frame the story's places for an overview; else the place's shape or
- * overlays (usually a field, a route or an old map, far tighter than a
- * town-level zoom); else fly to its point. */
+ * overlays (a parish, a route or an old map), no closer than a town;
+ * else fly to its point, at a regional zoom. */
 function moveCamera(map: MapLibreMap, slide: MapSlide, duration: number) {
   if (slide.overview) {
     const [west, south, east, north] = slide.overview.bounds;
@@ -50,12 +60,12 @@ function moveCamera(map: MapLibreMap, slide: MapSlide, duration: number) {
   }
   const place = slide.place;
   const bounds = placeBounds(place);
-  if (bounds) {
-    map.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { maxZoom: 17, duration });
+  if (bounds && Math.max(bounds[2] - bounds[0], bounds[3] - bounds[1]) >= MIN_SHAPE_DEGREES) {
+    map.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], { maxZoom: SHAPE_MAX_ZOOM, padding: SHAPE_PADDING, duration });
     return;
   }
   const center = placeCenter(place);
-  if (center) map.flyTo({ center, zoom: 9, essential: true, duration });
+  if (center) map.flyTo({ center, zoom: POINT_ZOOM, essential: true, duration });
 }
 
 /** The pin on the place; hidden for an overview (the dots stand in for
