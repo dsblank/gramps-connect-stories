@@ -44,8 +44,8 @@
     code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
     pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-x: auto; white-space: pre; }
     .small { font-size: 14px; color: var(--muted); }
-    /* Wider than the text column, up to the animation's own width, and never wider than the screen. */
-    figure.demo { margin: 16px 0 8px; width: min(var(--demo-width, 720px), calc(100vw - 32px)); position: relative; left: 50%; transform: translateX(-50%); }
+    /* Wider than the text column, up to the animations' own width (both are 900px), and never wider than the screen. */
+    figure.demo { margin: 16px 0 8px; width: min(900px, calc(100vw - 32px)); position: relative; left: 50%; transform: translateX(-50%); }
     figure.demo img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; }
     figure.demo figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
     .bar-button { font: inherit; font-size: 14px; font-weight: 600; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 16px; cursor: pointer; }

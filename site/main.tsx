@@ -1,7 +1,7 @@
 // The standalone viewer: open a .story.zip (picked, dropped, or ?src=URL)
 // and present it. Runs entirely in the browser -- an opened file is never
 // uploaded anywhere; the only network traffic is the map's tiles.
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
@@ -224,7 +224,7 @@ function App() {
           account, and the format is open and documented, so it stays readable.
         </p>
         <figure className="demo">
-          <img src="images/slideshow.gif" width={720} height={428} loading="lazy"
+          <img src="images/slideshow.gif" width={900} height={534} loading="lazy"
             alt="A story playing: each slide shows a portrait, its date and place, and a sentence, while the map moves to the place and the timeline marks the year." />
           <figcaption>A story playing: the map and the timeline follow each moment.</figcaption>
         </figure>
@@ -276,7 +276,7 @@ function App() {
           choose <b>Edit</b>, or start one from scratch in the <a href="edit.html">Story Editor</a>. Other programs
           can write stories too: the format is open and documented.
         </p>
-        <figure className="demo" style={{ "--demo-width": "900px" } as CSSProperties}>
+        <figure className="demo">
           <img src="images/editing.gif" width={900} height={534} loading="lazy"
             alt="The Story Editor: choosing a slide, rewriting its text and title, reordering its photos, and the preview beside the form updating as each change is made." />
           <figcaption>The Story Editor: change a slide's text, title and photos, and watch the preview follow.</figcaption>
