@@ -82,6 +82,23 @@ try {
   const zip = readFileSync(join(siteDist, "examples", "no-map.story.zip"));
   await page.locator("input[type=file]").setInputFiles({ name: "anna.story.zip", mimeType: "application/zip", buffer: zip });
   await page.getByText("1 / 4").waitFor();
+  // A file has no address, so no link to share.
+  assert.equal(await page.getByRole("button", { name: "Copy link" }).count(), 0);
+  await page.getByRole("button", { name: "Close" }).click();
+
+  // A pasted link opens like ?src=, and becomes the page's own ?src=.
+  const pastedUrl = new URL("examples/full.story.zip", base).href;
+  await page.getByRole("textbox", { name: "Link to a story" }).fill(pastedUrl);
+  await page.getByRole("button", { name: "Open link" }).click();
+  await page.getByText("3 moments from Josef Meyer").waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("src"), pastedUrl);
+  // ...and has a link to share: this page, at this slide.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(base).origin });
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(() => location.hash === "#s1");
+  await page.getByRole("button", { name: "Copy link" }).click();
+  await page.getByRole("button", { name: "Link copied" }).waitFor();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), page.url());
   await page.getByRole("button", { name: "Close" }).click();
 
   // Something that isn't a story says so.

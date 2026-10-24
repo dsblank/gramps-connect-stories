@@ -1,7 +1,7 @@
 // The standalone viewer: open a .story.zip (picked, dropped, or ?src=URL)
 // and present it. Runs entirely in the browser -- an opened file is never
 // uploaded anywhere; the only network traffic is the map's tiles.
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
@@ -73,6 +73,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // The address the open story came from (?src=), or null for one opened
+  // from a file -- only a story with an address has a link to share.
+  const [source, setSource] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
+  const [pasted, setPasted] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const urls = useRef(new Map<string, string>());
 
@@ -91,7 +96,10 @@ function App() {
       setStory(pkg);
       setFileName(name);
       document.title = pkg.doc.title;
-      if (!keepUrl) history.replaceState(null, "", location.pathname);
+      if (!keepUrl) {
+        history.replaceState(null, "", location.pathname);
+        setSource(null);
+      }
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -99,13 +107,10 @@ function App() {
     }
   }, []);
 
-  // ?src=<url of a .story.zip>
-  useEffect(() => {
-    const src = new URLSearchParams(location.search).get("src");
-    if (!src) {
-      void loadDraft().then(setDraft);
-      return;
-    }
+  // Opens the .story.zip at `src` (an address, or a path on this site),
+  // keeping it in the page's own URL as ?src= so the page is a link to it.
+  const openSrc = useCallback((src: string) => {
+    setSource(src);
     void open(
       fetch(new URL(src, location.href)).then((res) => {
         if (!res.ok) throw new Error(`Couldn't fetch ${src} (${res.status}).`);
@@ -114,9 +119,40 @@ function App() {
         throw new Error(err instanceof TypeError ? `Couldn't fetch ${src}. If it's on another website, that site has to allow it (CORS).` : errorText(err));
       }),
       true,
-      decodeURIComponent(src.split("/").pop() || "") || undefined,
+      decodeURIComponent(src.split("/").pop()?.split("?")[0] || "") || undefined,
     );
   }, [open]);
+
+  // ?src=<url of a .story.zip>
+  useEffect(() => {
+    const src = new URLSearchParams(location.search).get("src");
+    if (!src) {
+      void loadDraft().then(setDraft);
+      return;
+    }
+    openSrc(src);
+  }, [openSrc]);
+
+  // A link pasted on the landing page: opened just like ?src=, which it
+  // also becomes in the address bar.
+  const openPasted = (e: FormEvent) => {
+    e.preventDefault();
+    const src = pasted.trim();
+    if (!src) return;
+    history.replaceState(null, "", `${location.pathname}?src=${encodeURIComponent(src)}`);
+    openSrc(src);
+  };
+
+  // Copies the page's address -- this story, at this slide.
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      setCopied("yes");
+    } catch {
+      setCopied("failed");
+    }
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   // F: fullscreen.
   useEffect(() => {
@@ -164,6 +200,7 @@ function App() {
     release();
     void loadDraft().then(setDraft);
     setStory(null);
+    setSource(null);
     document.title = "Gramps Connect Story Viewer";
     history.replaceState(null, "", location.pathname);
   };
@@ -179,7 +216,17 @@ function App() {
           onSlideChange={onSlideChange}
           onClose={close}
           brand={<ViewerBrand href={location.pathname} target="_self" />}
-          actions={<button type="button" className="bar-button" onClick={() => void edit()}>Edit</button>}
+          actions={
+            <>
+              {source && (
+                <button type="button" className="bar-button" onClick={() => void copyLink()}
+                  title="Copy a link to this story, at this slide">
+                  {copied === "yes" ? "Link copied" : copied === "failed" ? "Couldn't copy" : "Copy link"}
+                </button>
+              )}
+              <button type="button" className="bar-button" onClick={() => void edit()}>Edit</button>
+            </>
+          }
         />
       </div>
     );
@@ -244,6 +291,17 @@ function App() {
             {loading ? "Opening…" : "Open a story…"}
           </button>
           <p className="hint">or drop a .story.zip file anywhere on this page</p>
+          <form className="url-form" onSubmit={openPasted}>
+            <input
+              type="url"
+              required
+              value={pasted}
+              onChange={(e) => setPasted(e.currentTarget.value)}
+              placeholder="or paste a link to a .story.zip"
+              aria-label="Link to a story"
+            />
+            <button type="submit" className="bar-button" disabled={loading}>Open link</button>
+          </form>
           <input
             ref={fileInput}
             type="file"
