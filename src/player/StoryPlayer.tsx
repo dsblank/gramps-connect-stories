@@ -18,6 +18,10 @@ import { TIMELINE_HEIGHT, TimelineStrip, type TimelinePoint } from "./TimelineSt
  * centers each point in what's left. */
 const PANEL_FRACTION = 0.62;
 const BAR_HEIGHT = 56;
+/** Space kept between the map-mode switch and the title or buttons beside it. */
+const BAR_GAP = 8;
+/** The map-mode switch's own row under the bar, when the bar has no room for it. */
+const MODE_ROW_HEIGHT = 40;
 
 export interface StoryPlayerProps {
   story: StoryDoc;
@@ -268,6 +272,33 @@ export function StoryPlayer({
     [story.language, stringOverrides],
   );
   const rootRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const modeRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  // The map-mode switch is centered on the title bar; when it would run
+  // into the title or the buttons on the right (a phone, or a host with
+  // several actions), it gets a row of its own just under the bar.
+  const [modeBelowBar, setModeBelowBar] = useState(false);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof ResizeObserver === "undefined") return;
+    const check = () => {
+      const mode = modeRef.current;
+      if (!mode) return;
+      const rootBox = root.getBoundingClientRect();
+      const half = mode.offsetWidth / 2;
+      const center = rootBox.width / 2;
+      // Edges measured from the bar's own left; none of them depends on
+      // where the switch is, so moving it can't change the answer.
+      const titleRight = titleRef.current ? titleRef.current.getBoundingClientRect().right - rootBox.left : 0;
+      const actionsLeft = actionsRef.current ? actionsRef.current.getBoundingClientRect().left - rootBox.left : rootBox.width - 60;
+      setModeBelowBar(center - half < titleRight + BAR_GAP || center + half > actionsLeft - BAR_GAP);
+    };
+    const observer = new ResizeObserver(check);
+    for (const el of [root, titleRef.current, modeRef.current, actionsRef.current]) if (el) observer.observe(el);
+    check();
+    return () => observer.disconnect();
+  }, [story, Boolean(actions), Boolean(onClose)]);
   const slides = story.slides;
   const [index, setIndex] = useState(initialSlide);
   const slide = slides[index];
@@ -404,6 +435,7 @@ export function StoryPlayer({
         }}
       />
       <div
+        ref={titleRef}
         dir="auto"
         style={{
           position: "absolute", top: 0, left: 20, height: BAR_HEIGHT, maxWidth: "26%", zIndex: 3,
@@ -418,11 +450,11 @@ export function StoryPlayer({
       {firstCenter && (
         <div
           style={{
-            position: "absolute", top: 0, left: 0, right: 0, height: BAR_HEIGHT, zIndex: 3,
+            position: "absolute", top: modeBelowBar ? BAR_HEIGHT : 0, left: 0, right: 0, height: modeBelowBar ? MODE_ROW_HEIGHT : BAR_HEIGHT, zIndex: 3,
             display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none",
           }}
         >
-          <div style={{ pointerEvents: "auto" }}>
+          <div ref={modeRef} style={{ pointerEvents: "auto" }}>
             {renderMapModeControl
               ? renderMapModeControl(modeControlProps)
               : <MapModeControl {...modeControlProps} strings={strings} colors={colors} />}
@@ -431,6 +463,7 @@ export function StoryPlayer({
       )}
       {actions && (
         <div
+          ref={actionsRef}
           style={{
             position: "absolute", top: 0, right: onClose ? 60 : 12, height: BAR_HEIGHT, zIndex: 3,
             display: "flex", alignItems: "center", gap: 8,
@@ -462,7 +495,8 @@ export function StoryPlayer({
           <div
             style={{
               position: "absolute", top: 0, bottom: 0, right: 0, width: `${PANEL_FRACTION * 100}%`, zIndex: 1,
-              padding: `${BAR_HEIGHT}px 32px ${showTimeline ? TIMELINE_HEIGHT : 32}px`, boxSizing: "border-box",
+              // Below the map-mode switch too, when it has a row of its own.
+              padding: `${BAR_HEIGHT + (modeBelowBar ? MODE_ROW_HEIGHT : 0)}px 32px ${showTimeline ? TIMELINE_HEIGHT : 32}px`, boxSizing: "border-box",
               display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 16,
               overflowY: "auto",
               // Transparent where the panel starts, mid-screen, and solid
