@@ -126,6 +126,16 @@ test("editor: undo and redo, with typing coalesced", () => {
   assert.equal(h.future.length, 0);
 });
 
+test("editor: undo history works for any document, not only a StoryDoc", () => {
+  // Gramps Connect's story editor keeps its own spec (slides as references).
+  let h = startHistory({ title: "a", points: [] as string[] });
+  h = record(h, { title: "b", points: [] }, "title", 0);
+  h = record(h, { title: "b", points: ["x"] }, undefined, 10);
+  assert.deepEqual(undo(h).present, { title: "b", points: [] });
+  assert.equal(undo(undo(h)).present.title, "a");
+  assert.deepEqual(redo(undo(h)).present.points, ["x"]);
+});
+
 test("editor: date text to EDTF, in the story's language", async () => {
   assert.equal(await suggestEdtf("about 3 May 1850", undefined), "1850-05-03~");
   assert.equal(await suggestEdtf("between 1850 and 1860", "en"), "[1850..1860]");

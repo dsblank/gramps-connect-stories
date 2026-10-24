@@ -228,13 +228,14 @@ export function storyFileName(title: string): string {
   return `${safe || "story"}.story.zip`;
 }
 
-/** Undo and redo over whole documents. Typing in one field makes one step,
- * not one per keystroke: a change with the same `key` within COALESCE_MS
- * of the last replaces it. */
-export interface History {
-  past: StoryDoc[];
-  present: StoryDoc;
-  future: StoryDoc[];
+/** Undo and redo over whole documents (a StoryDoc here; any value that's
+ * replaced, never changed in place, works). Typing in one field makes one
+ * step, not one per keystroke: a change with the same `key` within
+ * COALESCE_MS of the last replaces it. */
+export interface History<T = StoryDoc> {
+  past: T[];
+  present: T;
+  future: T[];
   lastKey?: string;
   lastAt?: number;
 }
@@ -242,24 +243,24 @@ export interface History {
 export const COALESCE_MS = 1500;
 const MAX_STEPS = 200;
 
-export function startHistory(doc: StoryDoc): History {
+export function startHistory<T = StoryDoc>(doc: T): History<T> {
   return { past: [], present: doc, future: [] };
 }
 
-export function record(history: History, next: StoryDoc, key?: string, now = Date.now()): History {
+export function record<T>(history: History<T>, next: T, key?: string, now = Date.now()): History<T> {
   if (next === history.present) return history;
   const coalesce = key !== undefined && key === history.lastKey && history.lastAt !== undefined && now - history.lastAt < COALESCE_MS;
   const past = coalesce ? history.past : [...history.past, history.present].slice(-MAX_STEPS);
   return { past, present: next, future: [], lastKey: key, lastAt: now };
 }
 
-export function undo(history: History): History {
+export function undo<T>(history: History<T>): History<T> {
   const previous = history.past[history.past.length - 1];
   if (!previous) return history;
   return { past: history.past.slice(0, -1), present: previous, future: [history.present, ...history.future] };
 }
 
-export function redo(history: History): History {
+export function redo<T>(history: History<T>): History<T> {
   const [next, ...future] = history.future;
   if (!next) return history;
   return { past: [...history.past, history.present], present: next, future };
