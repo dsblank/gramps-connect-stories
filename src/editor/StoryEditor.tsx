@@ -30,7 +30,8 @@ import type { MapEditorStrings } from "./mapEditorStrings";
 import { WIKIDATA_PLACE_SEARCH, type PlaceSearch } from "./placeSearch";
 import { SlideList } from "./SlideList";
 import { StoryTextField } from "./StoryTextField";
-import { EDITOR_ENGLISH, type EditorStrings } from "./strings";
+import { browserLanguages, editorStringsFor, type EditorStrings } from "./strings";
+import { mapEditorStringsFor } from "./mapEditorStrings";
 
 const BAR_HEIGHT = 56;
 /** The story's own settings, in place of a slide index. */
@@ -102,9 +103,14 @@ function Thumb({ doc, slide, resolveMedia }: { doc: StoryDoc; slide: Slide; reso
 
 export function StoryEditor({
   initialStory, initialFiles, onChange, prepareImage: prepare = prepareImage, toolbar, brand, dark = false,
-  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf, placeSearch = WIKIDATA_PLACE_SEARCH, mapStrings,
+  strings: stringOverrides, playerStrings, parseDateText = suggestEdtf, placeSearch = WIKIDATA_PLACE_SEARCH, mapStrings: mapStringOverrides,
 }: StoryEditorProps) {
-  const strings = useMemo(() => ({ ...EDITOR_ENGLISH, ...stringOverrides }), [stringOverrides]);
+  // In the browser's language where there's a translation, over English.
+  const strings = useMemo(() => ({ ...editorStringsFor(...browserLanguages()), ...stringOverrides }), [stringOverrides]);
+  const mapStrings = useMemo(
+    () => ({ ...mapEditorStringsFor(...browserLanguages()), helpImage: strings.mapHelpImage, ...mapStringOverrides }),
+    [strings, mapStringOverrides],
+  );
   const [history, setHistory] = useState<History>(() => startHistory(initialStory));
   const [selected, setSelected] = useState(0);
   const [presenting, setPresenting] = useState(false);
@@ -271,7 +277,7 @@ export function StoryEditor({
         onChange={(e) => apply(updateStory(doc, { language: e.currentTarget.value.trim() || undefined }), "story:language")}
       />
       <Select
-        label={strings.map} w={320} allowDeselect={false}
+        label={strings.map} description={strings.mapHint} w={320} allowDeselect={false}
         data={[
           { value: "auto", label: strings.mapAuto },
           { value: "standard", label: strings.mapStandard },

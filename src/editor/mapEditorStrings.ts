@@ -1,5 +1,7 @@
-// The map editor's words. English here; Gramps Connect passes its own
-// translations (its t() is keyed by these same English texts).
+// The map editor's words, in English and the story editor's other
+// languages (translations/). Gramps Connect passes its own where it has
+// them (its t() is keyed by these same English texts).
+import { translationFor } from "./strings";
 
 export interface MapEditorStrings {
   point: string;
@@ -107,3 +109,9 @@ export const MAP_EDITOR_ENGLISH: MapEditorStrings = {
     + "working on the image's exact current shape either way.",
   helpImageRemove: "Click its × handle to remove it.",
 };
+
+/** The map editor's words in the first of `languages` it has; English
+ * when none. */
+export function mapEditorStringsFor(...languages: (string | undefined)[]): MapEditorStrings {
+  return translationFor(languages)?.mapEditor ?? MAP_EDITOR_ENGLISH;
+}

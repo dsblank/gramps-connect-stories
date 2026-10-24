@@ -1,5 +1,8 @@
-// The editor's own words. English here; a host with its own translations
-// (Gramps Connect) passes StoryEditor's `strings` instead.
+// The editor's own words, in English and the player's other languages
+// (translations/). The editor picks by the browser's languages; a host
+// with its own translations (Gramps Connect) passes StoryEditor's
+// `strings` instead.
+import { TRANSLATIONS } from "./translations";
 
 export interface EditorStrings {
   story: string;
@@ -8,6 +11,7 @@ export interface EditorStrings {
   language: string;
   languageHint: string;
   map: string;
+  mapHint: string;
   mapStandard: string;
   mapHistorical: string;
   mapAuto: string;
@@ -49,6 +53,8 @@ export interface EditorStrings {
   placeKeeps: (what: string) => string;
   editMap: string;
   editMapHint: string;
+  /** The map editor's help on adding an image, where images are files. */
+  mapHelpImage: string;
   mapDialogTitle: (placeName: string | undefined) => string;
   mapHelp: string;
   importShapes: string;
@@ -88,6 +94,7 @@ export const EDITOR_ENGLISH: EditorStrings = {
   language: "Language",
   languageHint: "The language the story is written in, e.g. en, de or fr-CA. Dates are read in it.",
   map: "Map",
+  mapHint: "How the map starts when the story plays. Readers can still change it.",
   mapStandard: "Today's map",
   mapHistorical: "Historical maps for each slide's year",
   mapAuto: "Viewer's choice",
@@ -129,6 +136,7 @@ export const EDITOR_ENGLISH: EditorStrings = {
   placeKeeps: (what) => `This place also has ${what}.`,
   editMap: "Edit map",
   editMapHint: "Shapes under the pin (a parish, a route) and scans of old maps laid over it.",
+  mapHelpImage: "Image: add a picture file, such as a scan of an old map -- see",
   mapDialogTitle: (placeName) => (placeName ? `Map: ${placeName}` : "Map"),
   mapHelp: "How to use this editor",
   importShapes: "Import shapes",
@@ -160,3 +168,36 @@ export const EDITOR_ENGLISH: EditorStrings = {
   problems: (count) => (count === 1 ? "1 problem to fix before saving" : `${count} problems to fix before saving`),
   openingSlide: "Opening slide",
 };
+
+/** The browser's languages, most preferred first (none outside one). */
+export function browserLanguages(): readonly string[] {
+  if (typeof navigator === "undefined") return [];
+  return navigator.languages?.length ? navigator.languages : [navigator.language];
+}
+
+/** The first of `languages` (BCP 47 tags, or Gramps' de_AT form) the
+ * editors have words for, as its base code: "de-CH" is "de". English
+ * counts, so "en-US, de" stays English. */
+export function editorLanguage(languages: readonly (string | undefined)[]): string | undefined {
+  for (const tag of languages) {
+    const base = tag?.toLowerCase().split(/[-_]/)[0];
+    if (base === "en" || (base && Object.prototype.hasOwnProperty.call(TRANSLATIONS, base))) return base;
+  }
+  return undefined;
+}
+
+/** The translations for the first of `languages` the editors have;
+ * none for English. */
+export function translationFor(languages: readonly (string | undefined)[]) {
+  const lang = editorLanguage(languages);
+  return lang && lang !== "en" ? TRANSLATIONS[lang] : undefined;
+}
+
+/** The editor's words in the first of `languages` it has; English when
+ * none. */
+export function editorStringsFor(...languages: (string | undefined)[]): EditorStrings {
+  return translationFor(languages)?.editor ?? EDITOR_ENGLISH;
+}
+
+/** Languages the editors have words for, besides English. */
+export const EDITOR_LANGUAGES = Object.keys(TRANSLATIONS);

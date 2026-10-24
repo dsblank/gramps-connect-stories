@@ -18,12 +18,6 @@ import type { EditorStrings } from "./strings";
 
 const BAR_HEIGHT = 56;
 
-/** Where the map editor's English is Gramps Connect's (images come from
- * its media there), the story editor's own. */
-const STORY_MAP_WORDS: Partial<MapEditorStrings> = {
-  helpImage: "Image: add a picture file, such as a scan of an old map -- see",
-};
-
 export interface PlaceMapDialogProps {
   place: Place | undefined;
   doc: StoryDoc;
@@ -83,7 +77,9 @@ function OverlayDateField({ value, language, parse, strings, onChange }: {
 export function PlaceMapDialog({
   place, doc, files, dark, parseDateText, strings, mapStrings: mapStringOverrides, onCancel, onDone,
 }: PlaceMapDialogProps) {
-  const mapStrings = { ...STORY_MAP_WORDS, ...mapStringOverrides };
+  // The map editor's help on images is Gramps Connect's (images come from
+  // its media there); here they're files.
+  const mapStrings = { helpImage: strings.mapHelpImage, ...mapStringOverrides };
   const editorRef = useRef<MapEditorHandle>(null);
   const initial = useMemo(() => placeToEditor(place), [place]);
   // The story's media and files with what's been added here.

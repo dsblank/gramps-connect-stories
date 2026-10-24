@@ -277,3 +277,41 @@ test("editor: a place's shapes and overlays, to the map editor and back", () => 
     geometry: { type: "FeatureCollection", features: [drawn] },
   });
 });
+
+test("editor: words in the browser's language, English counting as one", async () => {
+  const { EDITOR_ENGLISH, EDITOR_LANGUAGES, editorLanguage, editorStringsFor } = await import("../editor/strings");
+  const { MAP_EDITOR_ENGLISH, mapEditorStringsFor } = await import("../editor/mapEditorStrings");
+  assert.equal(editorStringsFor("de-CH").addSlide, "Folie hinzufügen");
+  assert.equal(editorStringsFor("fr_CA").undo, "Annuler");
+  assert.equal(editorStringsFor("he", "nl").present, "Presenteren");
+  // An English-first browser stays English, whatever comes after.
+  assert.equal(editorLanguage(["en-US", "de"]), "en");
+  assert.equal(editorStringsFor("en-US", "de"), EDITOR_ENGLISH);
+  assert.equal(editorStringsFor("he"), EDITOR_ENGLISH);
+  assert.equal(editorStringsFor(), EDITOR_ENGLISH);
+  assert.equal(mapEditorStringsFor("es").polygon, "Polígono");
+  assert.equal(mapEditorStringsFor("ja"), MAP_EDITOR_ENGLISH);
+  assert.equal(editorStringsFor("de").problems(2), "2 Probleme vor dem Speichern beheben");
+  assert.equal(mapEditorStringsFor("nl").lockedMany(3), "3 vormen kunnen hier niet worden bewerkt");
+  // The player's languages, so a story's buttons and its editor match.
+  const { PLAYER_LANGUAGES } = await import("../player/strings");
+  assert.deepEqual([...EDITOR_LANGUAGES, "en"].sort(), [...PLAYER_LANGUAGES].sort());
+});
+
+test("editor: every translation is filled in", async () => {
+  const { EDITOR_ENGLISH } = await import("../editor/strings");
+  const { MAP_EDITOR_ENGLISH } = await import("../editor/mapEditorStrings");
+  const { TRANSLATIONS } = await import("../editor/translations");
+  for (const [lang, { editor, mapEditor }] of Object.entries(TRANSLATIONS)) {
+    for (const [english, table] of [[EDITOR_ENGLISH, editor], [MAP_EDITOR_ENGLISH, mapEditor]] as const) {
+      assert.deepEqual(Object.keys(table).sort(), Object.keys(english).sort(), lang);
+      for (const [key, value] of Object.entries(table)) {
+        const englishValue = (english as unknown as Record<string, unknown>)[key];
+        assert.equal(typeof value, typeof englishValue, `${lang}.${key}`);
+        if (typeof value === "string") assert.ok(value.trim(), `${lang}.${key}`);
+        // Each function puts in what it's given.
+        if (typeof value === "function") assert.match(String(value("XYZ", 7)), /XYZ|7/, `${lang}.${key}`);
+      }
+    }
+  }
+});

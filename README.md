@@ -192,6 +192,13 @@ plain functions behind it (map files, the shape model, overlay geometry)
 are `@gramps-connect/story/map-edit`. The editor also needs `terra-draw`
 and `terra-draw-maplibre-gl-adapter` (optional peer dependencies).
 
+The editor's own words (and the map editor's) are in English, German,
+Spanish, French or Dutch, by the browser's languages: the person editing,
+not the story, so a German speaker can edit an English story in German.
+`editorStringsFor(...languages)` and `mapEditorStringsFor(...languages)`
+give the built-in words for other choices; pass `strings` and
+`mapStrings` to use your own (Gramps Connect passes its app's language).
+
 The editor is built with [Mantine](https://mantine.dev) 8 (optional peer
 dependencies `@mantine/core` and `@mantine/hooks`, needed only by the
 editor): wrap it in a `MantineProvider` and load Mantine's stylesheet. The

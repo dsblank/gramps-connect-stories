@@ -98,7 +98,7 @@ const base = `http://127.0.0.1:${server.address().port}${PREFIX}`;
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const pageErrors = [];
 try {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true, locale: "en-US" });
   await context.addInitScript(() => { delete window.showOpenFilePicker; delete window.showSaveFilePicker; });
   const page = await context.newPage();
   page.on("pageerror", (err) => pageErrors.push(String(err)));
@@ -317,6 +317,20 @@ try {
   await page.getByRole("link", { name: "make a new story" }).click();
   await page.getByText("Untitled story").first().waitFor();
   assert.equal((await slides()).length, 1);
+
+  // In a German browser: the page, the editor and its map editor in German.
+  const german = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "de-DE" });
+  const dePage = await german.newPage();
+  dePage.on("pageerror", (err) => pageErrors.push(err.message));
+  await dePage.goto(`${base}edit.html`);
+  await dePage.getByRole("button", { name: "Neue Geschichte" }).click();
+  await dePage.getByRole("button", { name: "+ Folie hinzufügen" }).waitFor();
+  assert.equal(await dePage.evaluate(() => document.documentElement.lang), "de");
+  assert.equal(await dePage.title(), "Geschichte ohne Titel – Geschichten-Editor");
+  await dePage.getByRole("button", { name: "Speichern", exact: true }).waitFor();
+  await dePage.getByText("Titel, Sprache und Karte").click();
+  await dePage.getByText("Wie die Karte beim Abspielen der Geschichte beginnt. Leser können sie trotzdem ändern.").waitFor();
+  await german.close();
 
   assert.deepEqual(pageErrors, []);
   console.log("browser editor tests passed");

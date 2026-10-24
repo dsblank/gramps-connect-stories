@@ -11,7 +11,9 @@ import { Alert, Button, Group, MantineProvider, Modal, Stack, Text, Title, useCo
 import { readStoryZip, validate, writeStoryZip, type StoryDoc } from "../src/index";
 import { ViewerBrand, ViewerIcon } from "../src/player/index";
 import { blankStory, pruneMedia, StoryEditor, storyFileName } from "../src/editor/index";
+import { browserLanguages } from "../src/editor/strings";
 import { clearDraft, loadDraft, saveDraft, type Draft } from "./drafts";
+import { pageStringsFor } from "./editorStrings";
 
 maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).href);
 
@@ -26,7 +28,12 @@ interface PickerWindow {
   showSaveFilePicker?: (options?: FilePickerOptions) => Promise<FileSystemFileHandle>;
 }
 const picker = window as unknown as PickerWindow;
-const STORY_FILES: FilePickerOptions["types"] = [{ description: "Story", accept: { "application/zip": [".zip"] } }];
+// In the browser's language, where the editor has it.
+const { lang: PAGE_LANG, strings: S } = pageStringsFor(browserLanguages());
+document.documentElement.lang = PAGE_LANG;
+document.title = S.pageTitle;
+
+const STORY_FILES: FilePickerOptions["types"] = [{ description: S.storyFiles, accept: { "application/zip": [".zip"] } }];
 
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === "AbortError";
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -56,19 +63,17 @@ function Landing({ onOpen, onNew, error }: { onOpen: () => void; onNew: () => vo
     <Stack maw={560} mx="auto" px="md" py={48} gap="md">
       <Group gap="sm">
         <ViewerIcon size={36} />
-        <Title order={1} size={28}>Story Editor</Title>
+        <Title order={1} size={28}>{S.pageTitle}</Title>
       </Group>
       <Text c="dimmed">
-        Change a family-history story (<code>.story.zip</code>): its slides' titles, dates, text and photos, and their
-        order.
-        Your story stays on your computer: nothing is uploaded.
+        {S.landingBefore}<code>.story.zip</code>{S.landingAfter}
       </Text>
       <Group>
-        <Button onClick={onOpen}>Open a story…</Button>
-        <Button variant="default" onClick={onNew}>New story</Button>
+        <Button onClick={onOpen}>{S.openStory}</Button>
+        <Button variant="default" onClick={onNew}>{S.newStory}</Button>
       </Group>
       {error && <Alert color="red" role="alert">{error}</Alert>}
-      <Text size="sm"><a href="./">Back to the Story Viewer</a></Text>
+      <Text size="sm"><a href="./">{S.backToViewer}</a></Text>
     </Stack>
   );
 }
@@ -96,9 +101,9 @@ function App() {
     setDoc(next.doc);
     setFiles(next.files);
     setGeneration((g) => g + 1);
-    document.title = `${next.doc.title} – Story Editor`;
+    document.title = `${next.doc.title} – ${S.pageTitle}`;
     void saveDraft(next).then((kept) => {
-      if (!kept) setNotice("This browser won't keep your changes between visits: save before closing the page.");
+      if (!kept) setNotice(S.draftNotKept);
     });
   }, []);
 
@@ -110,7 +115,7 @@ function App() {
     if (src) {
       fetch(new URL(src, location.href))
         .then((res) => {
-          if (!res.ok) throw new Error(`Couldn't fetch ${src} (${res.status}).`);
+          if (!res.ok) throw new Error(S.fetchFailed(src, res.status));
           return res.blob();
         })
         .then((blob) => draftFromFile(blob, decodeURIComponent(src.split("/").pop() || "") || undefined))
@@ -118,7 +123,7 @@ function App() {
         .catch((err) => { setError(errorText(err)); setDraft(null); });
     } else if (params.has("new")) {
       clean();
-      show(newDraft(blankStory("Untitled story"), new Map()));
+      show(newDraft(blankStory(S.untitledStory), new Map()));
     } else {
       void loadDraft().then((saved) => {
         if (saved) show(saved);
@@ -187,9 +192,9 @@ function App() {
       // Before saying so: leaving the page right after mustn't leave the
       // draft saying there are unsaved changes.
       await saveDraft(next);
-      setNotice(handle ? `Saved to ${fileName}.` : `Downloaded ${fileName}.`);
+      setNotice(handle ? S.savedTo(fileName) : S.downloaded(fileName));
     } catch (err) {
-      if (!isAbort(err)) setNotice(`Couldn't save: ${errorText(err)}`);
+      if (!isAbort(err)) setNotice(S.saveFailed(errorText(err)));
     } finally {
       setSaving(false);
     }
@@ -197,18 +202,18 @@ function App() {
 
   const toolbar = (
     <>
-      {unsaved && <Text size="xs" c="dimmed" visibleFrom="sm">Unsaved changes</Text>}
-      <Button variant="default" onClick={() => guarded(() => void openFile())}>Open…</Button>
-      <Button variant="default" onClick={() => guarded(() => show(newDraft(blankStory("Untitled story", doc?.language), new Map())))}>New</Button>
-      <Button onClick={() => void save(false)} disabled={!valid || saving} loading={saving}>Save</Button>
+      {unsaved && <Text size="xs" c="dimmed" visibleFrom="sm">{S.unsaved}</Text>}
+      <Button variant="default" onClick={() => guarded(() => void openFile())}>{S.open}</Button>
+      <Button variant="default" onClick={() => guarded(() => show(newDraft(blankStory(S.untitledStory, doc?.language), new Map())))}>{S.new}</Button>
+      <Button onClick={() => void save(false)} disabled={!valid || saving} loading={saving}>{S.save}</Button>
       {picker.showSaveFilePicker && (
-        <Button variant="default" onClick={() => void save(true)} disabled={!valid || saving}>Save as…</Button>
+        <Button variant="default" onClick={() => void save(true)} disabled={!valid || saving}>{S.saveAs}</Button>
       )}
       <Button
         variant="subtle"
         onClick={() => guarded(() => { void clearDraft().then(() => { location.href = "./"; }); })}
       >
-        Close
+        {S.close}
       </Button>
     </>
   );
@@ -223,7 +228,7 @@ function App() {
           if (file) draftFromFile(file, file.name).then(show).catch((err) => { setError(errorText(err)); setDraft((d) => d ?? null); });
         }}
       />
-      {draft === null && <Landing onOpen={() => void openFile()} onNew={() => show(newDraft(blankStory("Untitled story"), new Map()))} error={error} />}
+      {draft === null && <Landing onOpen={() => void openFile()} onNew={() => show(newDraft(blankStory(S.untitledStory), new Map()))} error={error} />}
       {draft && (
         <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column" }}>
           {(notice || error) && (
@@ -244,11 +249,11 @@ function App() {
           </div>
         </div>
       )}
-      <Modal opened={!!confirm} onClose={() => setConfirm(null)} title="Discard unsaved changes?" centered>
-        <Text size="sm" mb="md">The changes since you last saved this story will be lost.</Text>
+      <Modal opened={!!confirm} onClose={() => setConfirm(null)} title={S.discardTitle} centered>
+        <Text size="sm" mb="md">{S.discardText}</Text>
         <Group justify="flex-end">
-          <Button variant="default" onClick={() => setConfirm(null)}>Keep editing</Button>
-          <Button color="red" onClick={() => { const action = confirm?.action; setConfirm(null); action?.(); }}>Discard</Button>
+          <Button variant="default" onClick={() => setConfirm(null)}>{S.keepEditing}</Button>
+          <Button color="red" onClick={() => { const action = confirm?.action; setConfirm(null); action?.(); }}>{S.discard}</Button>
         </Group>
       </Modal>
     </>

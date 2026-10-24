@@ -35,7 +35,8 @@ import {
 } from "../mapEdit";
 import { mapStyleUrl } from "../player/mapStyles";
 import { defaultColors } from "../player/theme";
-import { MAP_EDITOR_ENGLISH, type MapEditorStrings } from "./mapEditorStrings";
+import { mapEditorStringsFor, type MapEditorStrings } from "./mapEditorStrings";
+import { browserLanguages } from "./strings";
 
 type DrawMode = "point" | "linestring" | "polygon" | "rectangle" | "select";
 
@@ -316,7 +317,7 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
   initial, initialView, resolveImage, releaseImage, onAddImage, onStatus, onError, dark = false, defaultColor, labelColors,
   toolbarTop = 12, overlayNames = true, renderOverlayOptions, strings: stringOverrides,
 }, ref) {
-  const strings = { ...MAP_EDITOR_ENGLISH, ...stringOverrides };
+  const strings = { ...mapEditorStringsFor(...browserLanguages()), ...stringOverrides };
   // Callbacks and words the once-per-map listeners below read, kept live.
   const live = useRef({ strings, resolveImage, releaseImage, onError });
   live.current = { strings, resolveImage, releaseImage, onError };
@@ -1510,7 +1511,7 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
 /** How to use the map editor, for the host to show where it likes (Gramps
  * Connect: an info button's modal). */
 export function MapEditorHelp({ strings: stringOverrides, images = true }: { strings?: Partial<MapEditorStrings>; images?: boolean }) {
-  const strings = { ...MAP_EDITOR_ENGLISH, ...stringOverrides };
+  const strings = { ...mapEditorStringsFor(...browserLanguages()), ...stringOverrides };
   return (
     <Stack gap="md">
       <Text size="sm" fw={600}>{strings.helpDrawing}</Text>
