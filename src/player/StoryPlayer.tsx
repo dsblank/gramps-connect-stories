@@ -107,7 +107,10 @@ function SlidePhoto({ mediaKey, item, caption, credit, resolveMedia, colors }: {
       />
       {(caption || credit) && (
         <figcaption style={{ fontSize: 13, color: colors.muted }}>
-          {[caption, credit && `© ${credit}`].filter(Boolean).join(" · ")}
+          {/* The credit as written: a "©" would be wrong for public-domain
+              and freely licensed images, which need their licence named
+              instead. */}
+          {[caption, credit].filter(Boolean).join(" · ")}
         </figcaption>
       )}
     </figure>

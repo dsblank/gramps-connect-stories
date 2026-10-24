@@ -55,7 +55,7 @@
           }
         }
       },
-      "media": [{ "ref": "church", "caption": "The Grossmünster", "credit": "Example Archive" }],
+      "media": [{ "ref": "church", "caption": "The Grossmünster", "credit": "© Example Archive" }],
       "people": [{ "name": "Josef Meyer", "role": "Primary" }]
     },
     {
