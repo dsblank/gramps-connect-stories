@@ -95,9 +95,10 @@ export interface MapEditorHandle {
    * north], or null with nothing there yet. */
   drawnBounds: () => [number, number, number, number] | null;
   /** Places an image in the middle of the current view, at its own aspect
-   * ratio, and selects it. False if that image is already one of the
+   * ratio, and selects it, starting with `name` (e.g. the image's own
+   * description) if given. False if that image is already one of the
    * overlays. Throws if it can't be loaded. */
-  addImage: (image: string) => Promise<boolean>;
+  addImage: (image: string, name?: string) => Promise<boolean>;
   /** Adds shapes (an imported map file's, see parseMapFile) after what's
    * there, and frames them. */
   addFeatures: (features: Feature[]) => void;
@@ -1267,7 +1268,7 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
       for (const overlay of overlaysRef.current) for (const corner of overlay.corners) bounds.extend(corner);
       return bounds.isEmpty() ? null : (bounds.toArray().flat() as [number, number, number, number]);
     },
-    async addImage(image: string) {
+    async addImage(image: string, name?: string) {
       // The same image placed twice has no use: in Gramps Connect an
       // overlay's dates are its place's, so a second copy couldn't even be
       // given a different era -- it would just always show (or not) in
@@ -1288,6 +1289,7 @@ export const MapEditor = forwardRef<MapEditorHandle, MapEditorProps>(function Ma
       const draft: ImageOverlayDraft = {
         id: crypto.randomUUID(),
         image,
+        ...(name?.trim() ? { name: name.trim() } : {}),
         corners: [
           [topLeft.lng, topLeft.lat], [bottomRight.lng, topLeft.lat],
           [bottomRight.lng, bottomRight.lat], [topLeft.lng, bottomRight.lat],
