@@ -17,8 +17,8 @@ import { createRoot, type Root } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 // Text, not a side effect: it has to go inside the shadow root.
 import maplibreCss from "maplibre-gl/dist/maplibre-gl.css";
-import { mediaBlob, readStoryZip, type StoryPackage } from "../index";
-import { StoryPlayer, ViewerBrand } from "../player";
+import { mediaBlob, readStoryZip, type StoryPackage } from "../index.js";
+import { StoryPlayer, ViewerBrand } from "../player/index.js";
 
 /** maplibre's worker sits next to this script. Same origin: use it as is.
  * Another origin (the usual case, a CDN): a page can't start a worker from

@@ -1,15 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validate } from "../validate";
-import type { StoryDoc } from "../types";
+import { validate } from "../validate.js";
+import type { StoryDoc } from "../types.js";
 import {
   addImage, addSlide, blankStory, deleteSlide, duplicateSlide, findMedia, moveSlide, nextSlideId, pruneMedia, record, redo, slideDate,
   setSlidePhotos, startHistory, storyFileName, undo, updateMedia, updateSlide, updateStory, parseLatLon, formatLatLon, patchPlace,
   storyPlaceChoices,
-} from "../editor/model";
-import { suggestEdtf } from "../editor/dates";
-import { searchWikidataPlaces, wikidataPoint } from "../editor/placeSearch";
-import { editorToPlace, placeFeatures, placeToEditor } from "../editor/placeShapes";
+} from "../editor/model.js";
+import { suggestEdtf } from "../editor/dates.js";
+import { searchWikidataPlaces, wikidataPoint } from "../editor/placeSearch.js";
+import { editorToPlace, placeFeatures, placeToEditor } from "../editor/placeShapes.js";
 
 function story(): StoryDoc {
   return {
@@ -279,8 +279,8 @@ test("editor: a place's shapes and overlays, to the map editor and back", () => 
 });
 
 test("editor: words in the browser's language, English counting as one", async () => {
-  const { EDITOR_ENGLISH, EDITOR_LANGUAGES, editorLanguage, editorStringsFor } = await import("../editor/strings");
-  const { MAP_EDITOR_ENGLISH, mapEditorStringsFor } = await import("../editor/mapEditorStrings");
+  const { EDITOR_ENGLISH, EDITOR_LANGUAGES, editorLanguage, editorStringsFor } = await import("../editor/strings.js");
+  const { MAP_EDITOR_ENGLISH, mapEditorStringsFor } = await import("../editor/mapEditorStrings.js");
   assert.equal(editorStringsFor("de-CH").addSlide, "Folie hinzufügen");
   assert.equal(editorStringsFor("fr_CA").undo, "Annuler");
   assert.equal(editorStringsFor("he", "nl").present, "Presenteren");
@@ -294,14 +294,14 @@ test("editor: words in the browser's language, English counting as one", async (
   assert.equal(editorStringsFor("de").problems(2), "2 Probleme vor dem Speichern beheben");
   assert.equal(mapEditorStringsFor("nl").lockedMany(3), "3 vormen kunnen hier niet worden bewerkt");
   // The player's languages, so a story's buttons and its editor match.
-  const { PLAYER_LANGUAGES } = await import("../player/strings");
+  const { PLAYER_LANGUAGES } = await import("../player/strings.js");
   assert.deepEqual([...EDITOR_LANGUAGES, "en"].sort(), [...PLAYER_LANGUAGES].sort());
 });
 
 test("editor: every translation is filled in", async () => {
-  const { EDITOR_ENGLISH } = await import("../editor/strings");
-  const { MAP_EDITOR_ENGLISH } = await import("../editor/mapEditorStrings");
-  const { TRANSLATIONS } = await import("../editor/translations");
+  const { EDITOR_ENGLISH } = await import("../editor/strings.js");
+  const { MAP_EDITOR_ENGLISH } = await import("../editor/mapEditorStrings.js");
+  const { TRANSLATIONS } = await import("../editor/translations/index.js");
   for (const [lang, { editor, mapEditor }] of Object.entries(TRANSLATIONS)) {
     for (const [english, table] of [[EDITOR_ENGLISH, editor], [MAP_EDITOR_ENGLISH, mapEditor]] as const) {
       assert.deepEqual(Object.keys(table).sort(), Object.keys(english).sort(), lang);

@@ -16,7 +16,7 @@ import {
   validate,
   writeStoryZip,
   type StoryDoc,
-} from "../index";
+} from "../index.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const EXAMPLES = `${ROOT}examples/`;

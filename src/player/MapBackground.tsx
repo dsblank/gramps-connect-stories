@@ -10,11 +10,11 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import type { FeatureCollection, GeoJSON } from "geojson";
-import type { Overlay, Place } from "../types";
-import { dateCoversYear } from "./dates";
-import { placeBounds, placeCenter, type StoryPlaces } from "./geo";
-import { applyOhmYear, crossfadeStyleSwap, mapStyleKey, mapStyleUrl } from "./mapStyles";
-import { PIN_PATH_D, type PlayerColors } from "./theme";
+import type { Overlay, Place } from "../types.js";
+import { dateCoversYear } from "./dates.js";
+import { placeBounds, placeCenter, type StoryPlaces } from "./geo.js";
+import { applyOhmYear, crossfadeStyleSwap, mapStyleKey, mapStyleUrl } from "./mapStyles.js";
+import { PIN_PATH_D, type PlayerColors } from "./theme.js";
 
 const SHAPE_SOURCE = "story-shape";
 const FILL_LAYER = "story-shape-fill";

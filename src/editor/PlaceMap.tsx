@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
-import type { LonLat } from "../types";
-import type { Bounds } from "../player/geo";
-import { mapStyleUrl } from "../player/mapStyles";
-import { defaultColors, PIN_PATH_D } from "../player/theme";
-import { roundDegrees } from "./model";
+import type { LonLat } from "../types.js";
+import type { Bounds } from "../player/geo.js";
+import { mapStyleUrl } from "../player/mapStyles.js";
+import { defaultColors, PIN_PATH_D } from "../player/theme.js";
+import { roundDegrees } from "./model.js";
 
 export interface PlaceMapProps {
   point: LonLat | null;

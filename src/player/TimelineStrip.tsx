@@ -2,8 +2,8 @@
 // the story's dated slides, with click-to-jump per dot. SVG, since a story
 // has at most a few dozen dated slides and SVG rescales for free.
 import { useEffect, useRef, useState } from "react";
-import { axisTicks, storyDomain, tickLabel, xForYear } from "./timelineLayout";
-import { PIN_PATH_D, type PlayerColors } from "./theme";
+import { axisTicks, storyDomain, tickLabel, xForYear } from "./timelineLayout.js";
+import { PIN_PATH_D, type PlayerColors } from "./theme.js";
 
 export const TIMELINE_HEIGHT = 70;
 const MARGIN = 28;

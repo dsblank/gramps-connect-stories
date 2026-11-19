@@ -2,10 +2,10 @@
 // real browser by scripts/test-player.mjs.)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseStoryText } from "../player/text";
-import { dateCoversYear, edtfYearRange, timelineYear } from "../player/dates";
-import { placeBounds, placeCenter, storyPlaces } from "../player/geo";
-import { axisTicks, storyDomain, tickLabel, xForYear } from "../player/timelineLayout";
+import { parseStoryText } from "../player/text.js";
+import { dateCoversYear, edtfYearRange, timelineYear } from "../player/dates.js";
+import { placeBounds, placeCenter, storyPlaces } from "../player/geo.js";
+import { axisTicks, storyDomain, tickLabel, xForYear } from "../player/timelineLayout.js";
 
 test("text: bold, italic, line breaks and paragraphs", () => {
   assert.deepEqual(parseStoryText("Born *about* 1850 in **Zürich**."), [[[
@@ -96,7 +96,7 @@ test("timeline layout", () => {
 });
 
 test("strings: the story's language, then the browser's, then English", async () => {
-  const { stringsFor, ENGLISH } = await import("../player/strings");
+  const { stringsFor, ENGLISH } = await import("../player/strings.js");
   assert.equal(stringsFor("de-CH").next, "Weiter");
   assert.equal(stringsFor(undefined, "fr-FR").next, "Suivant");
   assert.equal(stringsFor("he", "nl").next, "Volgende");

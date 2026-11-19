@@ -2,9 +2,9 @@
 // sections 1 and 5). A zip handed to readStoryZip() may come from anyone,
 // so reading caps how much it will inflate before looking at any of it.
 import { unzip, zip, type AsyncZippable, type UnzipFileInfo } from "fflate";
-import { FORMAT_ID, FORMAT_VERSION, StoryFormatError, upgradeStory } from "./version";
-import { validate, type StoryIssue } from "./validate";
-import type { MediaItem, StoryDoc } from "./types";
+import { FORMAT_ID, FORMAT_VERSION, StoryFormatError, upgradeStory } from "./version.js";
+import { validate, type StoryIssue } from "./validate.js";
+import type { MediaItem, StoryDoc } from "./types.js";
 
 export interface StoryPackage {
   doc: StoryDoc;

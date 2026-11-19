@@ -13,7 +13,7 @@
 // @tmcw/togeojson's GPX/KML readers put them.
 import type { Feature, FeatureCollection, GeoJsonObject, Geometry, Position } from "geojson";
 import { gpx, kml } from "@tmcw/togeojson";
-import type { OverlayCorners } from "./geometry";
+import type { OverlayCorners } from "./geometry.js";
 
 /** An image overlay's picture, as a Media handle behind this marker (not a
  * real URL: an app-internal reference, since a resolvable link would need

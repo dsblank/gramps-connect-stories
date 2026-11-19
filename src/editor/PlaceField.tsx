@@ -6,12 +6,12 @@
 // always kept.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Autocomplete, Button, Group, Loader, Stack, Text, TextInput, Tooltip, UnstyledButton } from "@mantine/core";
-import type { Place } from "../types";
-import type { Bounds } from "../player/geo";
-import { formatLatLon, parseLatLon, patchPlace, roundDegrees } from "./model";
-import { PlaceMap } from "./PlaceMap";
-import type { PlaceSearch, PlaceSearchResult } from "./placeSearch";
-import type { EditorStrings } from "./strings";
+import type { Place } from "../types.js";
+import type { Bounds } from "../player/geo.js";
+import { formatLatLon, parseLatLon, patchPlace, roundDegrees } from "./model.js";
+import { PlaceMap } from "./PlaceMap.js";
+import type { PlaceSearch, PlaceSearchResult } from "./placeSearch.js";
+import type { EditorStrings } from "./strings.js";
 
 export type PlaceUpdate = (place: Place | undefined) => Place | undefined;
 

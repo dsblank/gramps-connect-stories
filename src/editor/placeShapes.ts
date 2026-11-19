@@ -5,9 +5,9 @@
 // doesn't know, a FeatureCollection's own members -- is carried over from
 // the place as it was.
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import type { Overlay, Place, StoryDate } from "../types";
-import type { MapEditorOverlay, MapEditorResult } from "./MapEditor";
-import { patchPlace } from "./model";
+import type { Overlay, Place, StoryDate } from "../types.js";
+import type { MapEditorOverlay, MapEditorResult } from "./MapEditor.js";
+import { patchPlace } from "./model.js";
 
 /** The features in a place's `geometry`, whichever form it takes. */
 export function placeFeatures(place: Place | undefined): Feature[] {

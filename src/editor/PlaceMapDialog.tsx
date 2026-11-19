@@ -4,17 +4,17 @@
 // place and any images added, as one change; Cancel drops them.
 import { useMemo, useRef, useState } from "react";
 import { ActionIcon, Box, Button, Group, Modal, Stack, Text, TextInput, Tooltip } from "@mantine/core";
-import type { MediaItem, Place, StoryDate, StoryDoc } from "../types";
-import { optimizeImage } from "../image";
-import { parseMapFile } from "../mapEdit";
-import { storyPlaces } from "../player/geo";
-import { edtfYearRange } from "../player/dates";
-import type { DateTextParser } from "./dates";
-import { MapEditor, MapEditorHelp, type MapEditorHandle } from "./MapEditor";
-import type { MapEditorStrings } from "./mapEditorStrings";
-import { addImage, slideDate, type NewImage } from "./model";
-import { editorToPlace, placeToEditor } from "./placeShapes";
-import type { EditorStrings } from "./strings";
+import type { MediaItem, Place, StoryDate, StoryDoc } from "../types.js";
+import { optimizeImage } from "../image.js";
+import { parseMapFile } from "../mapEdit/index.js";
+import { storyPlaces } from "../player/geo.js";
+import { edtfYearRange } from "../player/dates.js";
+import type { DateTextParser } from "./dates.js";
+import { MapEditor, MapEditorHelp, type MapEditorHandle } from "./MapEditor.js";
+import type { MapEditorStrings } from "./mapEditorStrings.js";
+import { addImage, slideDate, type NewImage } from "./model.js";
+import { editorToPlace, placeToEditor } from "./placeShapes.js";
+import type { EditorStrings } from "./strings.js";
 
 const BAR_HEIGHT = 56;
 

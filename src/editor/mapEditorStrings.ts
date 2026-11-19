@@ -1,7 +1,7 @@
 // The map editor's words, in English and the story editor's other
 // languages (translations/). Gramps Connect passes its own where it has
 // them (its t() is keyed by these same English texts).
-import { translationFor } from "./strings";
+import { translationFor } from "./strings.js";
 
 export interface MapEditorStrings {
   point: string;

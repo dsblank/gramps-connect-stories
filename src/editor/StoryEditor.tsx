@@ -11,27 +11,27 @@ import {
   ActionIcon, Badge, Box, Button, Divider, Group, Modal, Popover, Select, Stack, Text, TextInput, Tooltip, UnstyledButton,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import type { MediaItem, Slide, SlideMedia, StoryDoc } from "../types";
-import { optimizeImage } from "../image";
-import { validate, type StoryIssue } from "../validate";
-import { storyPlaces } from "../player/geo";
-import { StoryPlayer } from "../player/StoryPlayer";
-import type { PlayerStrings } from "../player/strings";
-import { suggestEdtf, type DateTextParser } from "./dates";
-import { DateField } from "./DateField";
+import type { MediaItem, Slide, SlideMedia, StoryDoc } from "../types.js";
+import { optimizeImage } from "../image.js";
+import { validate, type StoryIssue } from "../validate.js";
+import { storyPlaces } from "../player/geo.js";
+import { StoryPlayer } from "../player/StoryPlayer.js";
+import type { PlayerStrings } from "../player/strings.js";
+import { suggestEdtf, type DateTextParser } from "./dates.js";
+import { DateField } from "./DateField.js";
 import {
   addImage, addSlide, deleteSlide, findMedia, duplicateSlide, moveSlide, record, redo, setSlidePhotos, startHistory, storyPlaceChoices,
   undo, updateMedia, updateSlide, updateStory, type History, type NewImage,
-} from "./model";
-import { PhotosField } from "./PhotosField";
-import { PlaceField, type PlaceUpdate } from "./PlaceField";
-import { PlaceMapDialog } from "./PlaceMapDialog";
-import type { MapEditorStrings } from "./mapEditorStrings";
-import { WIKIDATA_PLACE_SEARCH, type PlaceSearch } from "./placeSearch";
-import { SlideList } from "./SlideList";
-import { StoryTextField } from "./StoryTextField";
-import { browserLanguages, editorStringsFor, type EditorStrings } from "./strings";
-import { mapEditorStringsFor } from "./mapEditorStrings";
+} from "./model.js";
+import { PhotosField } from "./PhotosField.js";
+import { PlaceField, type PlaceUpdate } from "./PlaceField.js";
+import { PlaceMapDialog } from "./PlaceMapDialog.js";
+import type { MapEditorStrings } from "./mapEditorStrings.js";
+import { WIKIDATA_PLACE_SEARCH, type PlaceSearch } from "./placeSearch.js";
+import { SlideList } from "./SlideList.js";
+import { StoryTextField } from "./StoryTextField.js";
+import { browserLanguages, editorStringsFor, type EditorStrings } from "./strings.js";
+import { mapEditorStringsFor } from "./mapEditorStrings.js";
 
 const BAR_HEIGHT = 56;
 /** The story's own settings, in place of a slide index. */

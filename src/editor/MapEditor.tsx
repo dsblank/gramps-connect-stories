@@ -32,11 +32,11 @@ import {
 import {
   addToSession, assembleForSaving, lockPart, mercatorBearing, mercatorDistance, prepareForEditing, rotatePoint, scalePoint,
   type EditableGeometry, type EditablePart, type EditSession, type OverlayCorners, type SavedPart,
-} from "../mapEdit";
-import { mapStyleUrl } from "../player/mapStyles";
-import { defaultColors } from "../player/theme";
-import { mapEditorStringsFor, type MapEditorStrings } from "./mapEditorStrings";
-import { browserLanguages } from "./strings";
+} from "../mapEdit/index.js";
+import { mapStyleUrl } from "../player/mapStyles.js";
+import { defaultColors } from "../player/theme.js";
+import { mapEditorStringsFor, type MapEditorStrings } from "./mapEditorStrings.js";
+import { browserLanguages } from "./strings.js";
 
 type DrawMode = "point" | "linestring" | "polygon" | "rectangle" | "select";
 

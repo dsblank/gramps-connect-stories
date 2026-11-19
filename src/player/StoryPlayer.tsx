@@ -4,15 +4,15 @@
 // when two or more slides are dated. Fills its container; the host decides
 // whether that's a fullscreen modal, a page, or a box on a blog.
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from "react";
-import type { MediaItem, Slide, StoryDoc } from "../types";
-import { timelineYear } from "./dates";
-import { placeCenter, storyPlaces } from "./geo";
-import { MapBackground, type MapSlide } from "./MapBackground";
-import { MapModeControl, type MapMode, type MapModeControlProps } from "./MapModeControl";
-import { parseStoryText } from "./text";
-import { stringsFor, type PlayerStrings } from "./strings";
-import { defaultColors, type PlayerColors } from "./theme";
-import { TIMELINE_HEIGHT, TimelineStrip, type TimelinePoint } from "./TimelineStrip";
+import type { MediaItem, Slide, StoryDoc } from "../types.js";
+import { timelineYear } from "./dates.js";
+import { placeCenter, storyPlaces } from "./geo.js";
+import { MapBackground, type MapSlide } from "./MapBackground.js";
+import { MapModeControl, type MapMode, type MapModeControlProps } from "./MapModeControl.js";
+import { parseStoryText } from "./text.js";
+import { stringsFor, type PlayerStrings } from "./strings.js";
+import { defaultColors, type PlayerColors } from "./theme.js";
+import { TIMELINE_HEIGHT, TimelineStrip, type TimelinePoint } from "./TimelineStrip.js";
 
 /** How much of the width the slide panel takes over a map; the map
  * centers each point in what's left. */

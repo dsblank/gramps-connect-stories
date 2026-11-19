@@ -3,8 +3,8 @@
 // change spreads the object it touches, so fields this version doesn't
 // know (a newer minor version's, an extension's) ride along untouched:
 // opening and saving a story must never lose anything.
-import { FORMAT_ID, FORMAT_VERSION } from "../version";
-import type { MediaItem, Place, Slide, SlideMedia, StoryDate, StoryDoc } from "../types";
+import { FORMAT_ID, FORMAT_VERSION } from "../version.js";
+import type { MediaItem, Place, Slide, SlideMedia, StoryDate, StoryDoc } from "../types.js";
 
 /** A story with one empty slide: the smallest valid one. */
 export function blankStory(title: string, language?: string): StoryDoc {

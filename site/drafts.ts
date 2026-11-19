@@ -1,7 +1,7 @@
 // The story being edited, kept in this browser (IndexedDB) so a reload or a
 // closed tab doesn't lose it -- and the way the viewer hands a story to the
 // editor page. One draft at a time. Nothing here leaves the browser.
-import type { StoryDoc } from "../src/index";
+import type { StoryDoc } from "../src/index.js";
 
 export interface Draft {
   doc: StoryDoc;

@@ -4,12 +4,12 @@
 export {
   addToSession, assembleForSaving, lockPart, prepareForEditing,
   type EditableGeometry, type EditablePart, type EditMode, type EditSession, type SavedPart,
-} from "./model";
+} from "./model.js";
 export {
   IMAGE_OVERLAY_PROPERTY, isKmlLine, isKmlRegion, lineCoordsOf, mapItemToGeoJson, MEDIA_HANDLE_PREFIX, overlaySourceOfText,
   parseMapFile, polygonRingsOf, SOURCE_PROPERTY, type ImageOverlay,
-} from "./mapFile";
+} from "./mapFile.js";
 export {
   cornersFromBox, kmlBounds, kmlCenter, kmlOverlayBounds, kmlOverlayCenter, mercatorBearing, mercatorDistance, rotatePoint,
   scalePoint, unionBounds, type OverlayCorners,
-} from "./geometry";
+} from "./geometry.js";

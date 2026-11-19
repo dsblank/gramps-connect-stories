@@ -4,8 +4,8 @@
 // schema can't express (spec/1.0/README.md section 8).
 import schema from "../spec/1.0/story.schema.json" with { type: "json" };
 import { validate as schemaValidate } from "./generated/schemaValidator.js";
-import { CURRENT_MAJOR, parseVersion } from "./version";
-import type { StoryDoc } from "./types";
+import { CURRENT_MAJOR, parseVersion } from "./version.js";
+import type { StoryDoc } from "./types.js";
 
 /** Minor version of the schema bundled here: unknown fields in a file of
  * this minor version or older are probably typos, not newer features. */

@@ -1,6 +1,6 @@
 // The Story Editor page's own words (edit.html: its landing page, Open,
 // Save, ...), in the editor's languages, picked by the browser's.
-import { editorLanguage } from "../src/editor/strings";
+import { editorLanguage } from "../src/editor/strings.js";
 
 export interface PageStrings {
   pageTitle: string;

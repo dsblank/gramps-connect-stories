@@ -1,9 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { Feature } from "geojson";
-import { IMAGE_OVERLAY_PROPERTY, isKmlRegion, mapItemToGeoJson, MEDIA_HANDLE_PREFIX, overlaySourceOfText, parseMapFile } from "../mapEdit/mapFile";
-import { cornersFromBox, kmlBounds, kmlOverlayBounds, mercatorBearing, mercatorDistance, rotatePoint, scalePoint, unionBounds } from "../mapEdit/geometry";
-import { addToSession, assembleForSaving, lockPart, prepareForEditing, type SavedPart } from "../mapEdit/model";
+import { IMAGE_OVERLAY_PROPERTY, isKmlRegion, mapItemToGeoJson, MEDIA_HANDLE_PREFIX, overlaySourceOfText, parseMapFile } from "../mapEdit/mapFile.js";
+import { cornersFromBox, kmlBounds, kmlOverlayBounds, mercatorBearing, mercatorDistance, rotatePoint, scalePoint, unionBounds } from "../mapEdit/geometry.js";
+import { addToSession, assembleForSaving, lockPart, prepareForEditing, type SavedPart } from "../mapEdit/model.js";
 
 const feature = (geometry: Feature["geometry"], properties: Record<string, unknown> = {}): Feature =>
   ({ type: "Feature", geometry, properties });

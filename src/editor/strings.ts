@@ -2,7 +2,7 @@
 // (translations/). The editor picks by the browser's languages; a host
 // with its own translations (Gramps Connect) passes StoryEditor's
 // `strings` instead.
-import { TRANSLATIONS } from "./translations";
+import { TRANSLATIONS } from "./translations/index.js";
 
 export interface EditorStrings {
   story: string;

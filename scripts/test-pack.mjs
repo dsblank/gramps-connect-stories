@@ -5,7 +5,7 @@
 // which is what proves the "exports" map and the types resolve.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -81,17 +81,28 @@ try {
     }
     export const shapes = prepareForEditing(parseMapFile(mapItemToGeoJson([], [{ handle: "h", corners: [[0, 1], [1, 1], [1, 0], [0, 0]] }])));
     export const turned: [number, number] = rotatePoint([1, 0], [0, 0], 90);
+    // Each must fail: it proves the export has its real type, not \`any\`
+    // from a re-export the declarations couldn't resolve.
+    // @ts-expect-error -- a function
+    export const probeCore: symbol = readStoryZip;
+    // @ts-expect-error -- a component
+    export const probePlayer: symbol = StoryPlayer;
+    // @ts-expect-error -- a component
+    export const probeEditor: symbol = StoryEditor;
+    // @ts-expect-error -- a function
+    export const probeMapEdit: symbol = rotatePoint;
   `);
-  writeFileSync(join(project, "tsconfig.json"), JSON.stringify({
+  const writeTsconfig = (module, moduleResolution, skipLibCheck = false) => writeFileSync(join(project, "tsconfig.json"), JSON.stringify({
     compilerOptions: {
-      target: "ES2020", module: "ESNext", moduleResolution: "bundler", jsx: "react-jsx", strict: true,
-      noEmit: true, skipLibCheck: false, resolveJsonModule: true, lib: ["ES2020", "DOM"],
+      target: "ES2020", module, moduleResolution, jsx: "react-jsx", strict: true,
+      noEmit: true, skipLibCheck, resolveJsonModule: true, lib: ["ES2020", "DOM"],
       // TypeScript 6+ loads no @types packages unless listed, and
       // maplibre's own declarations use the global GeoJSON namespace.
       types: ["geojson"],
     },
     files: ["app.tsx"],
   }));
+  writeTsconfig("ESNext", "bundler"); // esbuild reads it too
   const esbuild = createRequire(import.meta.url).resolve("esbuild");
   const { build } = await import(esbuild);
   await build({
@@ -101,8 +112,24 @@ try {
   console.log("every entry point bundles");
   const tsPackage = createRequire(import.meta.url).resolve("typescript/package.json");
   const tsc = join(dirname(tsPackage), JSON.parse(readFileSync(tsPackage, "utf8")).bin.tsc);
-  run(process.execPath, [tsc, "-p", project], project);
-  console.log("types resolve");
+  // Under both resolution modes consumers use: "bundler" (Vite, esbuild,
+  // ...) and "nodenext" (plain Node), which only resolves the declarations'
+  // relative imports if they carry .js extensions. The nodenext pass skips
+  // lib checking because maplibre's own dependencies (@maplibre/geojson-vt,
+  // @maplibre/vt-pbf) ship extensionless declarations; the probes above
+  // still catch our re-exports failing, and the scan below checks our
+  // declarations' specifiers directly.
+  for (const [module, moduleResolution, skipLibCheck] of [["ESNext", "bundler", false], ["NodeNext", "NodeNext", true]]) {
+    writeTsconfig(module, moduleResolution, skipLibCheck);
+    run(process.execPath, [tsc, "-p", project], project);
+    console.log(`types resolve (moduleResolution ${moduleResolution})`);
+  }
+  const typesDir = join(project, "node_modules/@gramps-connect/story/dist/types");
+  const extensionless = readdirSync(typesDir, { recursive: true })
+    .filter((f) => f.endsWith(".d.ts"))
+    .flatMap((f) => [...readFileSync(join(typesDir, f), "utf8").matchAll(/(?:from|import\()\s*["'](\.{1,2}\/[^"']*)["']/g)]
+      .map((m) => m[1]).filter((spec) => !/\.(js|json)$/.test(spec)).map((spec) => `${f}: ${spec}`));
+  assert.deepEqual(extensionless, [], "declarations need .js on relative imports for nodenext consumers");
   console.log("package tests passed");
 } finally {
   rmSync(work, { recursive: true, force: true });

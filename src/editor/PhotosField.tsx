@@ -4,8 +4,8 @@
 // store; this only says what was chosen.
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { ActionIcon, Box, Button, Group, Loader, Stack, Text, TextInput, Tooltip } from "@mantine/core";
-import type { MediaItem, SlideMedia } from "../types";
-import type { EditorStrings } from "./strings";
+import type { MediaItem, SlideMedia } from "../types.js";
+import type { EditorStrings } from "./strings.js";
 
 export interface PhotosFieldProps {
   photos: SlideMedia[];

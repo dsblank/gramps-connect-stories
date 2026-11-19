@@ -1,7 +1,7 @@
 // What the player needs from a story's dates: which years an EDTF value
 // covers (to show a historical map overlay only in its own era), and a
 // position on the timeline finer than a whole year when the date allows.
-import type { StoryDate } from "../types";
+import type { StoryDate } from "../types.js";
 
 export interface YearRange {
   /** Undefined for an open start ("../1850"). */

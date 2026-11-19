@@ -1,6 +1,6 @@
 // Where a slide is on the map: its point, or the box around its shape and
 // overlays -- pure geometry, no map library.
-import type { LonLat, Place } from "../types";
+import type { LonLat, Place } from "../types.js";
 
 export type Bounds = [west: number, south: number, east: number, north: number];
 

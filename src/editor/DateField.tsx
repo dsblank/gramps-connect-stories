@@ -2,11 +2,11 @@
 // follows the text as it's typed until someone changes it by hand.
 import { useEffect, useRef, useState } from "react";
 import { Anchor, Group, Stack, Text, TextInput } from "@mantine/core";
-import type { StoryDate } from "../types";
-import { edtfYearRange } from "../player/dates";
-import type { DateTextParser } from "./dates";
-import { slideDate } from "./model";
-import type { EditorStrings } from "./strings";
+import type { StoryDate } from "../types.js";
+import { edtfYearRange } from "../player/dates.js";
+import type { DateTextParser } from "./dates.js";
+import { slideDate } from "./model.js";
+import type { EditorStrings } from "./strings.js";
 
 export interface DateFieldProps {
   value: StoryDate | undefined;

@@ -1,5 +1,5 @@
-import type { EditorStrings } from "../strings";
-import type { MapEditorStrings } from "../mapEditorStrings";
+import type { EditorStrings } from "../strings.js";
+import type { MapEditorStrings } from "../mapEditorStrings.js";
 
 export const editor: EditorStrings = {
   story: "Geschichte",

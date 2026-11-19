@@ -8,12 +8,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import { Alert, Button, Group, MantineProvider, Modal, Stack, Text, Title, useComputedColorScheme } from "@mantine/core";
-import { readStoryZip, validate, writeStoryZip, type StoryDoc } from "../src/index";
-import { ViewerBrand, ViewerIcon } from "../src/player/index";
-import { blankStory, pruneMedia, StoryEditor, storyFileName } from "../src/editor/index";
-import { browserLanguages } from "../src/editor/strings";
-import { clearDraft, loadDraft, saveDraft, type Draft } from "./drafts";
-import { pageStringsFor } from "./editorStrings";
+import { readStoryZip, validate, writeStoryZip, type StoryDoc } from "../src/index.js";
+import { ViewerBrand, ViewerIcon } from "../src/player/index.js";
+import { blankStory, pruneMedia, StoryEditor, storyFileName } from "../src/editor/index.js";
+import { browserLanguages } from "../src/editor/strings.js";
+import { clearDraft, loadDraft, saveDraft, type Draft } from "./drafts.js";
+import { pageStringsFor } from "./editorStrings.js";
 
 maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).href);
 

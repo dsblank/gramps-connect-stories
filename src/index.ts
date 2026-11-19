@@ -8,7 +8,7 @@ export type {
   SlideMedia,
   StoryDate,
   StoryDoc,
-} from "./types";
+} from "./types.js";
 export {
   CURRENT_MAJOR,
   FORMAT_ID,
@@ -19,8 +19,8 @@ export {
   upgradeStory,
   type ParsedVersion,
   type StoryErrorCode,
-} from "./version";
-export { validate, type StoryIssue, type ValidationResult } from "./validate";
+} from "./version.js";
+export { validate, type StoryIssue, type ValidationResult } from "./validate.js";
 export {
   mediaBlob,
   readStoryZip,
@@ -28,7 +28,7 @@ export {
   writeStoryZip,
   type ReadLimits,
   type StoryPackage,
-} from "./zip";
+} from "./zip.js";
 export {
   DEFAULT_MAX_EDGE,
   encodingCandidates,
@@ -37,4 +37,4 @@ export {
   type ImagePurpose,
   type OptimizedImage,
   type OptimizeOptions,
-} from "./image";
+} from "./image.js";

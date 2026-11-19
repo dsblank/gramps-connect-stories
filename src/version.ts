@@ -1,7 +1,7 @@
 // Format identity and versioning (spec/1.0/README.md section 2), and the
 // chain of upgraders that lets this package keep opening every older major
 // version of the format.
-import type { StoryDoc } from "./types";
+import type { StoryDoc } from "./types.js";
 
 export const FORMAT_ID = "gramps-connect-story";
 

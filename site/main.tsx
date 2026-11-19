@@ -4,9 +4,9 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
-import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index";
-import { StoryPlayer, ViewerBrand, ViewerIcon } from "../src/player/index";
-import { loadDraft, saveDraft, type Draft } from "./drafts";
+import { mediaBlob, readStoryZip, type StoryPackage } from "../src/index.js";
+import { StoryPlayer, ViewerBrand, ViewerIcon } from "../src/player/index.js";
+import { loadDraft, saveDraft, type Draft } from "./drafts.js";
 
 maplibregl.setWorkerUrl(new URL("./maplibre-gl-worker.mjs", import.meta.url).href);
 
