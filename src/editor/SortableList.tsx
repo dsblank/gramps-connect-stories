@@ -1,5 +1,6 @@
 // A vertical list whose rows are reordered by dragging a grip (⋮⋮) at
-// their left: the slide list and a slide's photos. Built on @dnd-kit so a
+// their left: the slide list and a slide's photos here, and every ordered
+// list in Gramps Connect (which passes its own words). Built on @dnd-kit so a
 // drag works with a mouse, a finger, and the keyboard (focus the grip,
 // Space, ↑/↓, Space), with screen-reader announcements. Only the grip
 // starts a drag, so the rest of a row keeps its clicks and text fields.
@@ -37,14 +38,17 @@ export interface SortableListProps {
   /** Called once per drop; never with from === to. */
   onMove: (from: number, to: number) => void;
   /** Renders row `index`; `grip` goes first in the row (null with a
-   * single row, which has nothing to reorder). */
+   * single row, which has nothing to reorder, or when `disabled`). */
   renderItem: (index: number, grip: ReactNode) => ReactNode;
+  /** No grips and no dragging (e.g. someone who can't edit), laid out
+   * the same as a single row's list. */
+  disabled?: boolean;
   /** Gap between rows: px, or a CSS length. */
   gap?: number | string;
   strings?: SortableStrings;
 }
 
-export function SortableList({ keys, onMove, renderItem, gap = 4, strings = EDITOR_ENGLISH }: SortableListProps) {
+export function SortableList({ keys, onMove, renderItem, disabled, gap = 4, strings = EDITOR_ENGLISH }: SortableListProps) {
   const ids = useMemo(() => sortableIds(keys), [keys]);
   const sensors = useSensors(
     // A few px before a drag starts, so a click on the grip isn't a drag.
@@ -67,7 +71,7 @@ export function SortableList({ keys, onMove, renderItem, gap = 4, strings = EDIT
     if (from >= 0 && to >= 0 && from !== to) onMove(from, to);
   }
 
-  if (keys.length < 2) {
+  if (disabled || keys.length < 2) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap }}>
         {keys.map((_, i) => <div key={ids[i]}>{renderItem(i, null)}</div>)}
