@@ -10,6 +10,7 @@ export { editorToPlace, placeFeatures, placeToEditor } from "./placeShapes.js";
 export { searchWikidataPlaces, wikidataPoint, WIKIDATA_PLACE_SEARCH, type PlaceSearch, type PlaceSearchResult } from "./placeSearch.js";
 export { StoryTextField, type StoryTextFieldProps } from "./StoryTextField.js";
 export { SlideList, type SlideListProps } from "./SlideList.js";
+export { SortableList, sortableIds, type SortableListProps, type SortableStrings } from "./SortableList.js";
 export { DateField, type DateFieldProps } from "./DateField.js";
 export { suggestEdtf, type DateTextParser } from "./dates.js";
 export { browserLanguages, EDITOR_ENGLISH, EDITOR_LANGUAGES, editorLanguage, editorStringsFor, type EditorStrings } from "./strings.js";

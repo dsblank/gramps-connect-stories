@@ -247,14 +247,6 @@ export function StoryEditor({
 
   const slideActions = slide && (
     <Group gap={6}>
-      <Tooltip label={strings.moveUp}>
-        <ActionIcon variant="default" aria-label={strings.moveUp} disabled={index === 0}
-          onClick={() => { apply(moveSlide(doc, index, index - 1)); setSelected(index - 1); }}>↑</ActionIcon>
-      </Tooltip>
-      <Tooltip label={strings.moveDown}>
-        <ActionIcon variant="default" aria-label={strings.moveDown} disabled={index === doc.slides.length - 1}
-          onClick={() => { apply(moveSlide(doc, index, index + 1)); setSelected(index + 1); }}>↓</ActionIcon>
-      </Tooltip>
       <Button variant="default" size="xs" onClick={() => { const r = duplicateSlide(doc, index); apply(r.doc); setSelected(r.index); }}>
         {strings.duplicateSlide}
       </Button>
@@ -341,6 +333,7 @@ export function StoryEditor({
         selected={index}
         onSelect={setSelected}
         onMove={(from, to) => { apply(moveSlide(doc, from, to)); setSelected(to); }}
+        strings={strings}
         getKey={(s) => s.id}
         renderItem={(s, i) => (
           <Group gap="sm" wrap="nowrap">

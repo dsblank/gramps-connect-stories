@@ -3,9 +3,10 @@
 // and description. The files themselves are the editor's to prepare and
 // store; this only says what was chosen.
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { ActionIcon, Box, Button, Group, Loader, Stack, Text, TextInput, Tooltip } from "@mantine/core";
+import { Box, Button, Group, Loader, Stack, Text, TextInput } from "@mantine/core";
 import type { MediaItem, SlideMedia } from "../types.js";
 import type { EditorStrings } from "./strings.js";
+import { SortableList } from "./SortableList.js";
 
 export interface PhotosFieldProps {
   photos: SlideMedia[];
@@ -95,40 +96,38 @@ export function PhotosField({ photos, media, urlFor, strings, busy, onChange, on
         }}
       />
       {photos.length === 0 && <Text size="xs" c="dimmed">{strings.photosHint}</Text>}
-      {photos.map((photo, i) => {
-        const item = Object.prototype.hasOwnProperty.call(media, photo.ref) ? media[photo.ref] : undefined;
-        return (
-          <Group key={i} gap="sm" align="flex-start" wrap="nowrap">
-            <Stack gap={4} align="center">
+      {photos.length > 0 && <SortableList
+        keys={photos.map((photo) => photo.ref)}
+        onMove={move}
+        gap="var(--mantine-spacing-sm)"
+        strings={strings}
+        renderItem={(i, grip) => {
+          const photo = photos[i];
+          const item = Object.prototype.hasOwnProperty.call(media, photo.ref) ? media[photo.ref] : undefined;
+          return (
+            <Group gap="sm" align="flex-start" wrap="nowrap">
+              {grip && <Box pt={4}>{grip}</Box>}
               <Preview mediaKey={photo.ref} urlFor={urlFor} />
-              <Group gap={4}>
-                <Tooltip label={strings.movePhotoUp}>
-                  <ActionIcon size="sm" variant="default" aria-label={strings.movePhotoUp} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</ActionIcon>
-                </Tooltip>
-                <Tooltip label={strings.movePhotoDown}>
-                  <ActionIcon size="sm" variant="default" aria-label={strings.movePhotoDown} disabled={i === photos.length - 1} onClick={() => move(i, i + 1)}>↓</ActionIcon>
-                </Tooltip>
-              </Group>
-            </Stack>
-            <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
-              <TextInput size="xs" label={strings.caption} value={photo.caption ?? ""} onChange={(e) => set(i, { caption: e.currentTarget.value }, "caption")} />
-              <TextInput size="xs" label={strings.credit} placeholder={strings.creditHint} value={photo.credit ?? ""} onChange={(e) => set(i, { credit: e.currentTarget.value }, "credit")} />
-              {item && (
-                <TextInput
-                  size="xs" label={strings.description} description={strings.descriptionHint} value={item.alt ?? ""}
-                  onChange={(e) => onDescription(photo.ref, e.currentTarget.value)}
-                />
-              )}
-              <Group gap="xs">
-                <Button variant="subtle" size="compact-xs" onClick={() => pick(i)} disabled={busy}>{strings.replacePhoto}</Button>
-                <Button variant="subtle" size="compact-xs" color="red" onClick={() => onChange(photos.filter((_, j) => j !== i), "photos")}>
-                  {strings.removePhoto}
-                </Button>
-              </Group>
-            </Stack>
-          </Group>
-        );
-      })}
+              <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+                <TextInput size="xs" label={strings.caption} value={photo.caption ?? ""} onChange={(e) => set(i, { caption: e.currentTarget.value }, "caption")} />
+                <TextInput size="xs" label={strings.credit} placeholder={strings.creditHint} value={photo.credit ?? ""} onChange={(e) => set(i, { credit: e.currentTarget.value }, "credit")} />
+                {item && (
+                  <TextInput
+                    size="xs" label={strings.description} description={strings.descriptionHint} value={item.alt ?? ""}
+                    onChange={(e) => onDescription(photo.ref, e.currentTarget.value)}
+                  />
+                )}
+                <Group gap="xs">
+                  <Button variant="subtle" size="compact-xs" onClick={() => pick(i)} disabled={busy}>{strings.replacePhoto}</Button>
+                  <Button variant="subtle" size="compact-xs" color="red" onClick={() => onChange(photos.filter((_, j) => j !== i), "photos")}>
+                    {strings.removePhoto}
+                  </Button>
+                </Group>
+              </Stack>
+            </Group>
+          );
+        }}
+      />}
     </Stack>
   );
 }

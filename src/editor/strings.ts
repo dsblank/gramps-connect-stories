@@ -21,8 +21,14 @@ export interface EditorStrings {
   addSlide: string;
   duplicateSlide: string;
   deleteSlide: string;
-  moveUp: string;
-  moveDown: string;
+  /** The grip that reorders slides and photos, and the keyboard and
+   * screen-reader words for using it. */
+  dragToReorder: string;
+  reorderHelp: string;
+  reorderPickedUp: (position: number) => string;
+  reorderMovedTo: (position: number) => string;
+  reorderDropped: (position: number) => string;
+  reorderCancelled: string;
   slideTitle: string;
   text: string;
   bold: string;
@@ -70,8 +76,6 @@ export interface EditorStrings {
   photosHint: string;
   addPhoto: string;
   replacePhoto: string;
-  movePhotoUp: string;
-  movePhotoDown: string;
   removePhoto: string;
   caption: string;
   credit: string;
@@ -104,8 +108,12 @@ export const EDITOR_ENGLISH: EditorStrings = {
   addSlide: "Add slide",
   duplicateSlide: "Duplicate",
   deleteSlide: "Delete",
-  moveUp: "Move up",
-  moveDown: "Move down",
+  dragToReorder: "Drag to reorder",
+  reorderHelp: "To reorder, press Space, move with the arrow keys, then press Space again to drop or Escape to cancel.",
+  reorderPickedUp: (n) => `Picked up item ${n}.`,
+  reorderMovedTo: (n) => `Moved to position ${n}.`,
+  reorderDropped: (n) => `Dropped at position ${n}.`,
+  reorderCancelled: "Move cancelled.",
   slideTitle: "Title",
   text: "Text",
   bold: "Bold",
@@ -152,8 +160,6 @@ export const EDITOR_ENGLISH: EditorStrings = {
   photosHint: "Add, drop or paste a photo. It's resized for the screen, and hidden details like camera and location are left out.",
   addPhoto: "Add photo",
   replacePhoto: "Replace",
-  movePhotoUp: "Move photo up",
-  movePhotoDown: "Move photo down",
   removePhoto: "Remove",
   caption: "Caption",
   credit: "Credit",

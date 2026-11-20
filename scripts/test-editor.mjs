@@ -132,9 +132,16 @@ try {
   await page.getByRole("button", { name: "Work it out from the date" }).click();
   await precise("1850~");
 
-  // Reorder: Baptism up above the birth.
-  await page.getByRole("option").nth(2).click();
-  await page.getByRole("button", { name: "Move up" }).click();
+  // Reorder: Baptism up above the birth, dragging its grip from the
+  // keyboard (Space picks it up, an arrow moves it, Space drops it).
+  const grip = page.getByRole("button", { name: "Drag to reorder" }).nth(2);
+  await grip.focus();
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(150);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(300);
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(300);
   assert.match((await slides())[1], /Baptism/);
 
   // Add a slide, then undo it.
